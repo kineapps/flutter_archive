@@ -1,14 +1,15 @@
 # flutter_archive
 
-A new flutter plugin project.
+Create and extract ZIP archive files. Uses Android/Apple platform APIs for high performance and optimal memory usage.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/developing-packages/),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+- Supports Android and iOS.
+- Modern plugin implementation based on Kotlin (Android) and Swift (iOS).
+- Zip files in a directory (recursively or not).
+- Zip a given list of files.
+- Unzip an archive file to a given directory.
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.dev/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+## Example
+
+See [example application](https://github.com/kineapps/flutter_archive/tree/master/example).

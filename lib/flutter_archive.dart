@@ -12,6 +12,10 @@ import 'package:flutter/services.dart';
 class FlutterArchive {
   static const MethodChannel _channel = MethodChannel('flutter_archive');
 
+  /// Compress and save all files in [sourceDir] to [zipFile]. Recurse
+  /// subdirectories is [recurseSubDirs] is true.
+  ///
+  /// Returns true on success, false on error.
   static Future<bool> zip(
       Directory sourceDir, File zipFile, bool recurseSubDirs) async {
     final bool success = await _channel.invokeMethod('zip', <String, dynamic>{
@@ -22,6 +26,11 @@ class FlutterArchive {
     return success;
   }
 
+  /// Compress given list of [files] and save the resulted archive to [zipFile].
+  /// [sourceDir] is the root directory of [files] (all [files] must reside
+  /// under the [sourceDir]).
+  ///
+  /// Returns true on success, false on error.
   static Future<bool> zipFiles(
       {@required Directory sourceDir,
       @required List<File> files,
@@ -50,6 +59,9 @@ class FlutterArchive {
     return success;
   }
 
+  /// Uncompress [zipFile] to a given [destinationDir].
+  ///
+  /// Returns true on success, false on error.
   static Future<bool> unzip(File zipFile, Directory destinationDir) async {
     final bool success = await _channel.invokeMethod('unzip', <String, dynamic>{
       'zipFile': zipFile.path,
