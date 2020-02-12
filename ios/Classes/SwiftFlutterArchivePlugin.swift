@@ -1,0 +1,154 @@
+import Flutter
+import UIKit
+import ZIPFoundation
+
+/// https://github.com/weichsel/ZIPFoundation
+public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
+    public static func register(with registrar: FlutterPluginRegistrar) {
+        let channel = FlutterMethodChannel(name: "flutter_archive", binaryMessenger: registrar.messenger())
+        let instance = SwiftFlutterArchivePlugin()
+        registrar.addMethodCallDelegate(instance, channel: channel)
+    }
+
+    public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
+        log("call:" + call.method)
+
+        switch call.method {
+            case "zip":
+                guard let args = call.arguments as? [String: Any] else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS",
+                                        message: "Invalid arguments",
+                                        details: nil))
+                    return
+                }
+                guard let sourceDir = args["sourceDir"] as? String else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS",
+                                        message: "Argument 'sourceDir' is missing",
+                                        details: nil))
+                    return
+                }
+                guard let zipFile = args["zipFile"] as? String else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS",
+                                        message: "Argument 'zipFile' is missing",
+                                        details: nil))
+                    return
+                }
+
+                log("sourceDir: " + sourceDir)
+                log("zipFile: " + zipFile)
+
+                let fileManager = FileManager()
+                let sourceURL = URL(fileURLWithPath: sourceDir)
+                let destinationURL = URL(fileURLWithPath: zipFile)
+                do {
+                    try fileManager.zipItem(at: sourceURL,
+                                            to: destinationURL,
+                                            shouldKeepParent: false,
+                                            compressionMethod: .deflate)
+                    log("Created zip at: " + destinationURL.path)
+                    result(true)
+                } catch {
+                    log("Creation of ZIP archive failed with error:\(error)")
+                    result(FlutterError(code: "ZIP_ERROR",
+                                        message: error.localizedDescription,
+                                        details: nil))
+                }
+
+            case "zipFiles":
+                guard let args = call.arguments as? [String: Any] else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS",
+                                        message: "Invalid arguments",
+                                        details: nil))
+                    return
+                }
+                guard let sourceDir = args["sourceDir"] as? String else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS",
+                                        message: "Argument 'sourceDir' is missing",
+                                        details: nil))
+                    return
+                }
+                guard let files = args["files"] as? [String] else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS",
+                                        message: "Argument 'files' is missing",
+                                        details: nil))
+                    return
+                }
+                guard let zipFile = args["zipFile"] as? String else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS",
+                                        message: "Argument 'zipFile' is missing",
+                                        details: nil))
+                    return
+                }
+
+                log("files: " + files.joined(separator: ","))
+                log("zipFile: " + zipFile)
+
+                let sourceURL = URL(fileURLWithPath: sourceDir)
+                let destinationURL = URL(fileURLWithPath: zipFile)
+                do {
+                    // create zip archive
+                    let archive = Archive(url: destinationURL, accessMode: .create)
+                    
+                    for item in files {
+                        log("Adding: " + item)
+                        try archive?.addEntry(with: item, relativeTo: sourceURL, compressionMethod: .deflate)
+                    }
+
+                    log("Created zip at: " + archive.debugDescription)
+                    result(true)
+                } catch {
+                    log("Creation of ZIP archive failed with error:\(error)")
+                    result(FlutterError(code: "ZIP_ERROR",
+                                        message: error.localizedDescription,
+                                        details: nil))
+                }
+
+            case "unzip":
+                guard let args = call.arguments as? [String: Any] else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS",
+                                        message: "Invalid arguments",
+                                        details: nil))
+                    return
+                }
+                guard let zipFile = args["zipFile"] as? String else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS",
+                                        message: "Argument 'zipFile' is missing",
+                                        details: nil))
+                    return
+                }
+                guard let destinationDir = args["destinationDir"] as? String else {
+                    result(FlutterError(code: "INVALID_ARGUMENTS",
+                                        message: "Argument 'destinationDir' is missing",
+                                        details: nil))
+                    return
+                }
+
+                log("zipFile: " + zipFile)
+                log("destinationDir: " + destinationDir)
+
+                let fileManager = FileManager()
+                let sourceURL = URL(fileURLWithPath: zipFile)
+                let destinationURL = URL(fileURLWithPath: destinationDir)
+                do {
+                    try fileManager.createDirectory(at: destinationURL, withIntermediateDirectories: true, attributes: nil)
+                    try fileManager.unzipItem(at: sourceURL, to: destinationURL)
+                    log("Extracted zip to: " + destinationURL.path)
+                    result(true)
+                } catch {
+                    print("Extraction of ZIP archive failed with error:\(error)")
+                    result(FlutterError(code: "UNZIP_ERROR",
+                                        message: error.localizedDescription,
+                                        details: nil))
+                }
+
+            default:
+                log("not implemented")
+                result(FlutterMethodNotImplemented)
+        }
+    }
+
+    /// https://github.com/flutter/flutter/issues/13204
+    private func log(_ message: String) {
+        NSLog("\n" + message)
+    }
+}
