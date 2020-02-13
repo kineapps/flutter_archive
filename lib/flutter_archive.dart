@@ -13,10 +13,14 @@ import 'package:flutter/services.dart';
 class FlutterArchive {
   static const MethodChannel _channel = MethodChannel('flutter_archive');
 
-  /// Compress and save all files in [sourceDir] to [zipFile]. Recurse
-  /// subdirectories if [recurseSubDirs] is true.
+  /// Compress and save all files in [sourceDir] to [zipFile].
+  ///
+  /// By default zip all subdirectories recursively. Set [recurseSubDirs]
+  /// to false to disable recursive zipping.
   static Future<void> zipDirectory(
-      Directory sourceDir, File zipFile, bool recurseSubDirs) async {
+      {@required Directory sourceDir,
+      @required File zipFile,
+      bool recurseSubDirs = true}) async {
     await _channel.invokeMethod('zipDirectory', <String, dynamic>{
       'sourceDir': sourceDir.path,
       'zipFile': zipFile.path,
@@ -53,8 +57,9 @@ class FlutterArchive {
     });
   }
 
-  /// Uncompress [zipFile] to a given [destinationDir].
-  static Future<void> unzip(File zipFile, Directory destinationDir) async {
+  /// Extract [zipFile] to a given [destinationDir].
+  static Future<void> unzip(
+      {@required File zipFile, @required Directory destinationDir}) async {
     await _channel.invokeMethod('unzip', <String, dynamic>{
       'zipFile': zipFile.path,
       'destinationDir': destinationDir.path
