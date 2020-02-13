@@ -64,8 +64,7 @@ class _MyAppState extends State<MyApp> {
     print("Writing to zip file: " + zipFile.path);
 
     try {
-      final result = await FlutterArchive.zip(storeDir, zipFile, true);
-      print("zip result=" + result.toString());
+      await FlutterArchive.zipDirectory(storeDir, zipFile, true);
     } on PlatformException catch (e) {
       print(e);
     }
@@ -82,9 +81,8 @@ class _MyAppState extends State<MyApp> {
     print("Writing files to zip file: " + zipFile.path);
 
     try {
-      final result = await FlutterArchive.zipFiles(
+      await FlutterArchive.zipFiles(
           sourceDir: storeDir, files: testFiles, zipFile: zipFile);
-      print("zip result=" + result.toString());
     } on PlatformException catch (e) {
       print(e);
     }
@@ -103,8 +101,7 @@ class _MyAppState extends State<MyApp> {
     print("Extracting zip to directory: " + destinationDir.path);
     destinationDir.createSync();
     try {
-      final result = await FlutterArchive.unzip(zipFile, destinationDir);
-      print("unzip result=" + result.toString());
+      await FlutterArchive.unzip(zipFile, destinationDir);
     } on PlatformException catch (e) {
       print(e);
     }

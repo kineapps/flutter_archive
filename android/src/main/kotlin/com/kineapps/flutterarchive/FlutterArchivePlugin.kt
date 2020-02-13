@@ -42,7 +42,7 @@ class FlutterArchivePlugin : MethodCallHandler {
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         when {
-            call.method == "zip" -> {
+            call.method == "zipDirectory" -> {
                 try {
                     val sourceDir = call.argument<String>("sourceDir")
                     val zipFile = call.argument<String>("zipFile")

@@ -9,29 +9,25 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+/// Utility class for zipping and unzipping ZIP archive files.
 class FlutterArchive {
   static const MethodChannel _channel = MethodChannel('flutter_archive');
 
   /// Compress and save all files in [sourceDir] to [zipFile]. Recurse
-  /// subdirectories is [recurseSubDirs] is true.
-  ///
-  /// Returns true on success, false on error.
-  static Future<bool> zip(
+  /// subdirectories if [recurseSubDirs] is true.
+  static Future<void> zipDirectory(
       Directory sourceDir, File zipFile, bool recurseSubDirs) async {
-    final bool success = await _channel.invokeMethod('zip', <String, dynamic>{
+    await _channel.invokeMethod('zipDirectory', <String, dynamic>{
       'sourceDir': sourceDir.path,
       'zipFile': zipFile.path,
       'recurseSubDirs': recurseSubDirs
     });
-    return success;
   }
 
   /// Compress given list of [files] and save the resulted archive to [zipFile].
   /// [sourceDir] is the root directory of [files] (all [files] must reside
   /// under the [sourceDir]).
-  ///
-  /// Returns true on success, false on error.
-  static Future<bool> zipFiles(
+  static Future<void> zipFiles(
       {@required Directory sourceDir,
       @required List<File> files,
       @required File zipFile}) async {
@@ -50,23 +46,18 @@ class FlutterArchive {
       assert(!relativeFilePath.startsWith(Platform.pathSeparator));
       relativeFilePaths.add(relativeFilePath);
     });
-    final bool success =
-        await _channel.invokeMethod('zipFiles', <String, dynamic>{
+    await _channel.invokeMethod('zipFiles', <String, dynamic>{
       'sourceDir': sourceDir.path,
       'files': relativeFilePaths,
       'zipFile': zipFile.path,
     });
-    return success;
   }
 
   /// Uncompress [zipFile] to a given [destinationDir].
-  ///
-  /// Returns true on success, false on error.
-  static Future<bool> unzip(File zipFile, Directory destinationDir) async {
-    final bool success = await _channel.invokeMethod('unzip', <String, dynamic>{
+  static Future<void> unzip(File zipFile, Directory destinationDir) async {
+    await _channel.invokeMethod('unzip', <String, dynamic>{
       'zipFile': zipFile.path,
       'destinationDir': destinationDir.path
     });
-    return success;
   }
 }

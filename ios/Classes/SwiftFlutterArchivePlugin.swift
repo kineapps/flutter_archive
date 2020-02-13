@@ -19,7 +19,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
         log("call:" + call.method)
 
         switch call.method {
-            case "zip":
+            case "zipDirectory":
                 guard let args = call.arguments as? [String: Any] else {
                     result(FlutterError(code: "INVALID_ARGUMENTS",
                                         message: "Invalid arguments",
