@@ -1,3 +1,7 @@
+## 0.1.1+1
+
+- Minor cleanup.
+
 ## 0.1.1
 
 - Added support for Android V2 embedding.
