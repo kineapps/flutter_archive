@@ -6,6 +6,8 @@
 package com.kineapps.flutterarchive
 
 import android.util.Log
+import io.flutter.embedding.engine.plugins.FlutterPlugin
+import io.flutter.plugin.common.BinaryMessenger
 
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -30,19 +32,66 @@ import kotlinx.coroutines.withContext
 /**
  * FlutterArchivePlugin
  */
-class FlutterArchivePlugin : MethodCallHandler {
+class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
+    private var pluginBinding: FlutterPlugin.FlutterPluginBinding? = null
+    private var methodChannel: MethodChannel? = null
+
     companion object {
         private const val LOG_TAG = "FlutterArchivePlugin"
         @JvmStatic
         fun registerWith(registrar: Registrar) {
-            val channel = MethodChannel(registrar.messenger(), "flutter_archive")
-            channel.setMethodCallHandler(FlutterArchivePlugin())
+            Log.d(LOG_TAG, "registerWith")
+            val plugin = FlutterArchivePlugin()
+            plugin.doOnAttachedToEngine(registrar.messenger())
         }
     }
 
+    override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        Log.d(LOG_TAG, "onAttachedToEngine - IN")
+
+        if (pluginBinding != null) {
+            Log.w(LOG_TAG, "onAttachedToEngine - already attached")
+        }
+
+        pluginBinding = binding
+
+        val messenger = pluginBinding?.binaryMessenger
+        doOnAttachedToEngine(messenger!!)
+
+        Log.d(LOG_TAG, "onAttachedToEngine - OUT")
+    }
+
+    override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
+        Log.d(LOG_TAG, "onDetachedFromEngine")
+        doOnDetachedFromEngine()
+    }
+
+    private fun doOnAttachedToEngine(messenger: BinaryMessenger) {
+        Log.d(LOG_TAG, "doOnAttachedToEngine - IN")
+
+        methodChannel = MethodChannel(messenger, "flutter_archive")
+        methodChannel?.setMethodCallHandler(this)
+
+        Log.d(LOG_TAG, "doOnAttachedToEngine - OUT")
+    }
+
+    private fun doOnDetachedFromEngine() {
+        Log.d(LOG_TAG, "doOnDetachedFromEngine - IN")
+
+        if (pluginBinding == null) {
+            Log.w(LOG_TAG, "doOnDetachedFromEngine - already detached")
+        }
+        pluginBinding = null
+
+        methodChannel?.setMethodCallHandler(null)
+        methodChannel = null
+
+        Log.d(LOG_TAG, "doOnDetachedFromEngine - OUT")
+    }
+
     override fun onMethodCall(call: MethodCall, result: Result) {
-        when {
-            call.method == "zipDirectory" -> {
+        when (call.method) {
+            "zipDirectory" -> {
                 try {
                     val sourceDir = call.argument<String>("sourceDir")
                     val zipFile = call.argument<String>("zipFile")
@@ -53,7 +102,7 @@ class FlutterArchivePlugin : MethodCallHandler {
 
                     uiScope.launch {
                         withContext(Dispatchers.IO) {
-                            zip(sourceDir, zipFile, recurseSubDirs)
+                            zip(sourceDir!!, zipFile!!, recurseSubDirs)
                         }
                         result.success(true)
                     }
@@ -62,7 +111,7 @@ class FlutterArchivePlugin : MethodCallHandler {
                     result.error("zip_error", e.localizedMessage, e)
                 }
             }
-            call.method == "zipFiles" -> {
+            "zipFiles" -> {
                 try {
                     val sourceDir = call.argument<String>("sourceDir")
                     val files = call.argument<List<String>>("files")
@@ -73,7 +122,7 @@ class FlutterArchivePlugin : MethodCallHandler {
 
                     uiScope.launch {
                         withContext(Dispatchers.IO) {
-                            zipFiles(sourceDir, files!!, zipFile)
+                            zipFiles(sourceDir!!, files!!, zipFile!!)
                         }
                         result.success(true)
                     }
@@ -82,7 +131,7 @@ class FlutterArchivePlugin : MethodCallHandler {
                     result.error("zip_error", e.localizedMessage, e)
                 }
             }
-            call.method == "unzip" -> {
+            "unzip" -> {
                 try {
                     val zipFile = call.argument<String>("zipFile")
                     val destinationDir = call.argument<String>("destinationDir")
@@ -91,7 +140,7 @@ class FlutterArchivePlugin : MethodCallHandler {
 
                     uiScope.launch {
                         withContext(Dispatchers.IO) {
-                            unzip(zipFile, destinationDir)
+                            unzip(zipFile!!, destinationDir!!)
                         }
                         result.success(true)
                     }
@@ -105,7 +154,7 @@ class FlutterArchivePlugin : MethodCallHandler {
     }
 
     @Throws(IOException::class)
-    private fun zip(sourceDirPath: String?, zipFilePath: String?, recurseSubDirs: Boolean?) {
+    private fun zip(sourceDirPath: String, zipFilePath: String, recurseSubDirs: Boolean?) {
         val rootDirectory = File(sourceDirPath)
 
         Log.i("zip", "Root directory: $sourceDirPath")
@@ -113,14 +162,15 @@ class FlutterArchivePlugin : MethodCallHandler {
         Log.i("zip", "Sub directories: $recurseSubDirs")
 
         ZipOutputStream(BufferedOutputStream(FileOutputStream(zipFilePath))).use { zipOutputStream ->
-            addFilesInDirectoryToZip(zipOutputStream, rootDirectory, sourceDirPath!!, recurseSubDirs == true)
+            addFilesInDirectoryToZip(zipOutputStream, rootDirectory, sourceDirPath, recurseSubDirs == true)
         }
     }
 
     private fun addFilesInDirectoryToZip(zipOutputStream: ZipOutputStream, rootDirectory: File, directoryPath: String, recurseSubDirs: Boolean) {
         val directory = File(directoryPath)
 
-        for (f in directory.listFiles()) {
+        val files = directory.listFiles() ?: arrayOf<File>()
+        for (f in files) {
             val path = directoryPath + File.separator + f.name
             val relativePath = File(path).relativeTo(rootDirectory).path
 
@@ -153,7 +203,7 @@ class FlutterArchivePlugin : MethodCallHandler {
     }
 
     @Throws(IOException::class)
-    private fun zipFiles(sourceDirPath: String?, relativeFilePaths: List<String>, zipFilePath: String?) {
+    private fun zipFiles(sourceDirPath: String, relativeFilePaths: List<String>, zipFilePath: String) {
         val rootDirectory = File(sourceDirPath)
 
         Log.i("zip", "Root directory: $sourceDirPath")
@@ -177,10 +227,10 @@ class FlutterArchivePlugin : MethodCallHandler {
     }
 
     @Throws(IOException::class)
-    private fun unzip(zipFilePath: String?, destinationDirPath: String?) {
+    private fun unzip(zipFilePath: String, destinationDirPath: String) {
         var filename: String
-        ZipInputStream(BufferedInputStream(FileInputStream(zipFilePath!!))).use { zis ->
-            var destinationDir = File(destinationDirPath)
+        ZipInputStream(BufferedInputStream(FileInputStream(zipFilePath))).use { zis ->
+            val destinationDir = File(destinationDirPath)
             Log.d(LOG_TAG, "destinationDir.path: ${destinationDir.path}")
             Log.d(LOG_TAG, "destinationDir.canonicalPath: ${destinationDir.canonicalPath}")
             Log.d(LOG_TAG, "destinationDir.absolutePath: ${destinationDir.absolutePath}")
@@ -193,7 +243,7 @@ class FlutterArchivePlugin : MethodCallHandler {
 
                 // prevent Zip Path Traversal attack
                 // https://support.google.com/faqs/answer/9294009
-                var outputFileCanonicalPath = outputFile.canonicalPath
+                val outputFileCanonicalPath = outputFile.canonicalPath
                 if (!outputFileCanonicalPath.startsWith(destinationDir.canonicalPath)) {
                     Log.d(LOG_TAG, "outputFile path: ${outputFile.path}")
                     Log.d(LOG_TAG, "canonicalPath: $outputFileCanonicalPath")
@@ -208,7 +258,7 @@ class FlutterArchivePlugin : MethodCallHandler {
                 }
 
                 val parentDir = outputFile.parentFile
-                if (!parentDir.exists()) {
+                if (parentDir != null && !parentDir.exists()) {
                     Log.d(LOG_TAG, "Creating directory: " + parentDir.path)
                     parentDir.mkdirs()
                 }
