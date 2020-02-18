@@ -1,6 +1,6 @@
 # flutter_archive
 
-Create and extract ZIP archive files. Uses Android/Apple platform APIs for high performance and optimal memory usage.
+Create and extract ZIP archive files. Uses Android/iOS platform APIs for high performance and optimal memory usage.
 
 ## Features
 
