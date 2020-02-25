@@ -14,7 +14,7 @@
 
 ## 0.0.2
 
-- Ddocumented public APIs and updated README.md.
+- Documented public APIs and updated README.md.
 
 ## 0.0.1
 
