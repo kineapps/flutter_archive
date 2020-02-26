@@ -6,6 +6,7 @@ Create and extract ZIP archive files. Uses Android/iOS platform APIs for high pe
 
 - Supports Android and iOS.
 - Modern plugin implementation based on Kotlin (Android) and Swift (iOS).
+- Uses background processing to keep UI responsive.
 - Zip all files in a directory (optionally recursively).
 - Zip a given list of files.
 - Unzip an archive file to a given directory.

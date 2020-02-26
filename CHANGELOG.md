@@ -1,3 +1,7 @@
+## 0.1.2
+
+- [iOS] Zip/unzip files in a background thread to keep UI more responsive.
+
 ## 0.1.1+1
 
 - Minor cleanup.
