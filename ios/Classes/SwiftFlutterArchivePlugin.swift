@@ -5,9 +5,9 @@
 
 import Flutter
 import UIKit
+/// https://github.com/weichsel/ZIPFoundation
 import ZIPFoundation
 
-/// https://github.com/weichsel/ZIPFoundation
 public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "flutter_archive", binaryMessenger: registrar.messenger())
@@ -42,21 +42,27 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                 log("sourceDir: " + sourceDir)
                 log("zipFile: " + zipFile)
 
-                let fileManager = FileManager()
-                let sourceURL = URL(fileURLWithPath: sourceDir)
-                let destinationURL = URL(fileURLWithPath: zipFile)
-                do {
-                    try fileManager.zipItem(at: sourceURL,
-                                            to: destinationURL,
-                                            shouldKeepParent: false,
-                                            compressionMethod: .deflate)
-                    log("Created zip at: " + destinationURL.path)
-                    result(true)
-                } catch {
-                    log("Creation of ZIP archive failed with error:\(error)")
-                    result(FlutterError(code: "ZIP_ERROR",
-                                        message: error.localizedDescription,
-                                        details: nil))
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let fileManager = FileManager()
+                    let sourceURL = URL(fileURLWithPath: sourceDir)
+                    let destinationURL = URL(fileURLWithPath: zipFile)
+                    do {
+                        try fileManager.zipItem(at: sourceURL,
+                                                to: destinationURL,
+                                                shouldKeepParent: false,
+                                                compressionMethod: .deflate)
+                        DispatchQueue.main.async {
+                            self.log("Created zip at: " + destinationURL.path)
+                            result(true)
+                        }
+                    } catch {
+                        DispatchQueue.main.async {
+                            self.log("Creation of ZIP archive failed with error:\(error)")
+                            result(FlutterError(code: "ZIP_ERROR",
+                                                message: error.localizedDescription,
+                                                details: nil))
+                        }
+                    }
                 }
 
             case "zipFiles":
@@ -88,24 +94,29 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                 log("files: " + files.joined(separator: ","))
                 log("zipFile: " + zipFile)
 
-                let sourceURL = URL(fileURLWithPath: sourceDir)
-                let destinationURL = URL(fileURLWithPath: zipFile)
-                do {
-                    // create zip archive
-                    let archive = Archive(url: destinationURL, accessMode: .create)
-                    
-                    for item in files {
-                        log("Adding: " + item)
-                        try archive?.addEntry(with: item, relativeTo: sourceURL, compressionMethod: .deflate)
-                    }
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let sourceURL = URL(fileURLWithPath: sourceDir)
+                    let destinationURL = URL(fileURLWithPath: zipFile)
+                    do {
+                        // create zip archive
+                        let archive = Archive(url: destinationURL, accessMode: .create)
 
-                    log("Created zip at: " + archive.debugDescription)
-                    result(true)
-                } catch {
-                    log("Creation of ZIP archive failed with error:\(error)")
-                    result(FlutterError(code: "ZIP_ERROR",
-                                        message: error.localizedDescription,
-                                        details: nil))
+                        for item in files {
+                            self.log("Adding: " + item)
+                            try archive?.addEntry(with: item, relativeTo: sourceURL, compressionMethod: .deflate)
+                        }
+                        DispatchQueue.main.async {
+                            self.log("Created zip at: " + archive.debugDescription)
+                            result(true)
+                        }
+                    } catch {
+                        DispatchQueue.main.async {
+                            self.log("Creation of ZIP archive failed with error:\(error)")
+                            result(FlutterError(code: "ZIP_ERROR",
+                                                message: error.localizedDescription,
+                                                details: nil))
+                        }
+                    }
                 }
 
             case "unzip":
@@ -130,20 +141,25 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
 
                 log("zipFile: " + zipFile)
                 log("destinationDir: " + destinationDir)
-
-                let fileManager = FileManager()
-                let sourceURL = URL(fileURLWithPath: zipFile)
-                let destinationURL = URL(fileURLWithPath: destinationDir)
-                do {
-                    try fileManager.createDirectory(at: destinationURL, withIntermediateDirectories: true, attributes: nil)
-                    try fileManager.unzipItem(at: sourceURL, to: destinationURL)
-                    log("Extracted zip to: " + destinationURL.path)
-                    result(true)
-                } catch {
-                    print("Extraction of ZIP archive failed with error:\(error)")
-                    result(FlutterError(code: "UNZIP_ERROR",
-                                        message: error.localizedDescription,
-                                        details: nil))
+                DispatchQueue.global(qos: .userInitiated).async {
+                    let fileManager = FileManager()
+                    let sourceURL = URL(fileURLWithPath: zipFile)
+                    let destinationURL = URL(fileURLWithPath: destinationDir)
+                    do {
+                        try fileManager.createDirectory(at: destinationURL, withIntermediateDirectories: true, attributes: nil)
+                        try fileManager.unzipItem(at: sourceURL, to: destinationURL)
+                        DispatchQueue.main.async {
+                            self.log("Extracted zip to: " + destinationURL.path)
+                            result(true)
+                        }
+                    } catch {
+                        DispatchQueue.main.async {
+                            self.log("Extraction of ZIP archive failed with error:\(error)")
+                            result(FlutterError(code: "UNZIP_ERROR",
+                                                message: error.localizedDescription,
+                                                details: nil))
+                        }
+                    }
                 }
 
             default:
