@@ -90,63 +90,59 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
+        val uiScope = CoroutineScope(Dispatchers.Main)
+
         when (call.method) {
             "zipDirectory" -> {
-                try {
-                    val sourceDir = call.argument<String>("sourceDir")
-                    val zipFile = call.argument<String>("zipFile")
-                    val recurseSubDirs = call.argument<Boolean>("recurseSubDirs")
+                uiScope.launch {
+                    try {
+                        val sourceDir = call.argument<String>("sourceDir")
+                        val zipFile = call.argument<String>("zipFile")
+                        val recurseSubDirs = call.argument<Boolean>("recurseSubDirs")
 
-                    // https://proandroiddev.com/android-coroutine-recipes-33467a4302e9
-                    val uiScope = CoroutineScope(Dispatchers.Main)
-
-                    uiScope.launch {
                         withContext(Dispatchers.IO) {
                             zip(sourceDir!!, zipFile!!, recurseSubDirs)
                         }
                         result.success(true)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        result.error("zip_error", e.localizedMessage, e)
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    result.error("zip_error", e.localizedMessage, e)
                 }
             }
             "zipFiles" -> {
-                try {
-                    val sourceDir = call.argument<String>("sourceDir")
-                    val files = call.argument<List<String>>("files")
-                    val zipFile = call.argument<String>("zipFile")
+                uiScope.launch {
+                    try {
+                        val sourceDir = call.argument<String>("sourceDir")
+                        val files = call.argument<List<String>>("files")
+                        val zipFile = call.argument<String>("zipFile")
 
-                    // https://proandroiddev.com/android-coroutine-recipes-33467a4302e9
-                    val uiScope = CoroutineScope(Dispatchers.Main)
-
-                    uiScope.launch {
                         withContext(Dispatchers.IO) {
                             zipFiles(sourceDir!!, files!!, zipFile!!)
                         }
                         result.success(true)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        result.error("zip_error", e.localizedMessage, e)
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    result.error("zip_error", e.localizedMessage, e)
                 }
             }
             "unzip" -> {
-                try {
-                    val zipFile = call.argument<String>("zipFile")
-                    val destinationDir = call.argument<String>("destinationDir")
+                uiScope.launch {
+                    try {
+                        val zipFile = call.argument<String>("zipFile")
+                        val destinationDir = call.argument<String>("destinationDir")
 
-                    val uiScope = CoroutineScope(Dispatchers.Main)
+                        val uiScope = CoroutineScope(Dispatchers.Main)
 
-                    uiScope.launch {
                         withContext(Dispatchers.IO) {
                             unzip(zipFile!!, destinationDir!!)
                         }
                         result.success(true)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        result.error("unzip_error", e.localizedMessage, e)
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    result.error("unzip_error", e.localizedMessage, e)
                 }
             }
             else -> result.notImplemented()

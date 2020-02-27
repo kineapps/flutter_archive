@@ -1,3 +1,7 @@
+## 0.1.3
+
+- [Android] Improved error handling.
+
 ## 0.1.2
 
 - [iOS] Zip/unzip files in a background thread to keep UI more responsive.
