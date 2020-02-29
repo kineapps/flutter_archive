@@ -8,10 +8,6 @@ package com.kineapps.flutterarchive
 import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.BinaryMessenger
-
-import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
-
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
@@ -19,15 +15,16 @@ import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import java.io.BufferedInputStream
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.util.zip.ZipEntry
+import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 /**
  * FlutterArchivePlugin
@@ -106,7 +103,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                         result.success(true)
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        result.error("zip_error", e.localizedMessage, e)
+                        result.error("zip_error", e.localizedMessage, e.toString())
                     }
                 }
             }
@@ -123,7 +120,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                         result.success(true)
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        result.error("zip_error", e.localizedMessage, e)
+                        result.error("zip_error", e.localizedMessage, e.toString())
                     }
                 }
             }
@@ -133,15 +130,13 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                         val zipFile = call.argument<String>("zipFile")
                         val destinationDir = call.argument<String>("destinationDir")
 
-                        val uiScope = CoroutineScope(Dispatchers.Main)
-
                         withContext(Dispatchers.IO) {
                             unzip(zipFile!!, destinationDir!!)
                         }
                         result.success(true)
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        result.error("unzip_error", e.localizedMessage, e)
+                        result.error("unzip_error", e.localizedMessage, e.toString())
                     }
                 }
             }
@@ -224,16 +219,16 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
 
     @Throws(IOException::class)
     private fun unzip(zipFilePath: String, destinationDirPath: String) {
-        var filename: String
-        ZipInputStream(BufferedInputStream(FileInputStream(zipFilePath))).use { zis ->
-            val destinationDir = File(destinationDirPath)
-            Log.d(LOG_TAG, "destinationDir.path: ${destinationDir.path}")
-            Log.d(LOG_TAG, "destinationDir.canonicalPath: ${destinationDir.canonicalPath}")
-            Log.d(LOG_TAG, "destinationDir.absolutePath: ${destinationDir.absolutePath}")
-            while (true) {
-                val ze = zis.nextEntry ?: break
-                filename = ze.name
-                Log.d(LOG_TAG, "zipEntry fileName=$filename")
+        val destinationDir = File(destinationDirPath)
+
+        Log.d(LOG_TAG, "destinationDir.path: ${destinationDir.path}")
+        Log.d(LOG_TAG, "destinationDir.canonicalPath: ${destinationDir.canonicalPath}")
+        Log.d(LOG_TAG, "destinationDir.absolutePath: ${destinationDir.absolutePath}")
+
+        ZipFile(zipFilePath).use { zipFile ->
+            for (ze in zipFile.entries()) {
+                val filename = ze.name
+                Log.d(LOG_TAG, "zipEntry fileName=$filename, compressedSize=${ze.compressedSize}, size=${ze.size}, crc=${ze.crc}")
 
                 val outputFile = File(destinationDirPath, filename)
 
@@ -245,7 +240,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                     Log.d(LOG_TAG, "canonicalPath: $outputFileCanonicalPath")
                     throw SecurityException("Invalid zip file")
                 }
-
+                
                 // need to create any missing directories
                 if (ze.isDirectory) {
                     Log.d(LOG_TAG, "Creating directory: " + outputFile.path)
@@ -260,8 +255,9 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                 }
 
                 Log.d(LOG_TAG, "Writing file: " + outputFile.path)
-                outputFile.outputStream().use { outputStream -> zis.copyTo(outputStream) }
-                zis.closeEntry()
+                zipFile.getInputStream(ze).use { zis ->
+                    outputFile.outputStream().use { outputStream -> zis.copyTo(outputStream) }
+                }
             }
         }
     }
