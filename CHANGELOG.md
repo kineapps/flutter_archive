@@ -1,3 +1,8 @@
+## 0.1.4
+
+- [Android] Fixed: unzipping some files could fail to "java.util.zip.ZipException: invalid stored block lengths"
+- [Android] Fixed: any thrown exception during zip/unzip caused crash
+
 ## 0.1.3
 
 - [Android] Improved error handling.
