@@ -9,6 +9,21 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
+enum ExtractOperation { extract, skip, cancel }
+typedef OnUnzipProgress = ExtractOperation Function(
+    ZipEntry zipEntry, double progress);
+
+String _extractOperationToString(ExtractOperation extractOperation) {
+  switch (extractOperation) {
+    case ExtractOperation.skip:
+      return "skip";
+    case ExtractOperation.cancel:
+      return "cancel";
+    default:
+      return "extract";
+  }
+}
+
 /// Utility class for zipping and unzipping ZIP archive files.
 class FlutterArchive {
   static const MethodChannel _channel = MethodChannel('flutter_archive');
@@ -57,12 +72,71 @@ class FlutterArchive {
     });
   }
 
-  /// Extract [zipFile] to a given [destinationDir].
+  /// Extract [zipFile] to a given [destinationDir]. Optional callback function
+  /// [onUnzipProgress] is called before extracting a zip entry.
   static Future<void> unzip(
-      {@required File zipFile, @required Directory destinationDir}) async {
-    await _channel.invokeMethod('unzip', <String, dynamic>{
-      'zipFile': zipFile.path,
-      'destinationDir': destinationDir.path
-    });
+      {@required File zipFile,
+      @required Directory destinationDir,
+      OnUnzipProgress onUnzipProgress}) async {
+    final reportProgress = onUnzipProgress != null;
+    if (reportProgress) {
+      _channel.setMethodCallHandler((call) {
+        if (call.method == 'progress') {
+          final args = Map<String, dynamic>.from(call.arguments as Map);
+          final zipEntry = ZipEntry.fromMap(args);
+          final progress = args["progress"] as double;
+          final result = onUnzipProgress(zipEntry, progress);
+          return Future.value(_extractOperationToString(result));
+        }
+        return Future.value();
+      });
+    }
+    try {
+      await _channel.invokeMethod('unzip', <String, dynamic>{
+        'zipFile': zipFile.path,
+        'destinationDir': destinationDir.path,
+        'reportProgress': reportProgress,
+      });
+    } finally {
+      if (reportProgress) {
+        _channel.setMethodCallHandler(null);
+      }
+    }
   }
+}
+
+enum CompressionMethod { none, deflated }
+
+class ZipEntry {
+  const ZipEntry(
+      {this.name,
+      this.isDirectory,
+      this.modificationDate,
+      this.uncompressedSize,
+      this.compressedSize,
+      this.crc,
+      this.compressionMethod});
+
+  factory ZipEntry.fromMap(Map<String, dynamic> map) {
+    return ZipEntry(
+      name: map['name'] as String,
+      isDirectory: map['isDirectory'] as bool == true,
+      modificationDate: DateTime.fromMillisecondsSinceEpoch(
+          map['modificationDate'] as int ?? 0),
+      uncompressedSize: map['uncompressedSize'] as int,
+      compressedSize: map['compressedSize'] as int,
+      crc: map['crc'] as int,
+      compressionMethod: map['compressionMethod'] == 'none'
+          ? CompressionMethod.none
+          : CompressionMethod.deflated,
+    );
+  }
+
+  final String name;
+  final bool isDirectory;
+  final DateTime modificationDate;
+  final int uncompressedSize;
+  final int compressedSize;
+  final int crc;
+  final CompressionMethod compressionMethod;
 }

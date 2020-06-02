@@ -13,6 +13,7 @@ import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 import io.flutter.plugin.common.PluginRegistry.Registrar
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -23,8 +24,11 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.zip.ZipEntry
+import java.util.zip.ZipEntry.DEFLATED
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
+
+enum class ExtractOperation { extract, skip, cancel }
 
 /**
  * FlutterArchivePlugin
@@ -35,6 +39,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
 
     companion object {
         private const val LOG_TAG = "FlutterArchivePlugin"
+
         @JvmStatic
         fun registerWith(registrar: Registrar) {
             Log.d(LOG_TAG, "registerWith")
@@ -129,10 +134,13 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                     try {
                         val zipFile = call.argument<String>("zipFile")
                         val destinationDir = call.argument<String>("destinationDir")
+                        val reportProgress = call.argument<Boolean>("reportProgress")
 
+                        Log.d(LOG_TAG, "onMethodCall / unzip...")
                         withContext(Dispatchers.IO) {
-                            unzip(zipFile!!, destinationDir!!)
+                            unzip(zipFile!!, destinationDir!!, reportProgress == true)
                         }
+                        Log.d(LOG_TAG, "...onMethodCall / unzip")
                         result.success(true)
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -218,14 +226,18 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
     }
 
     @Throws(IOException::class)
-    private fun unzip(zipFilePath: String, destinationDirPath: String) {
+    private suspend fun unzip(zipFilePath: String, destinationDirPath: String, reportProgress: Boolean) {
         val destinationDir = File(destinationDirPath)
 
         Log.d(LOG_TAG, "destinationDir.path: ${destinationDir.path}")
         Log.d(LOG_TAG, "destinationDir.canonicalPath: ${destinationDir.canonicalPath}")
         Log.d(LOG_TAG, "destinationDir.absolutePath: ${destinationDir.absolutePath}")
 
+        val uiScope = CoroutineScope(Dispatchers.Main)
+
         ZipFile(zipFilePath).use { zipFile ->
+            val entriesCount = zipFile.size().toDouble()
+            var currentEntryIndex = 0.0
             for (ze in zipFile.entries()) {
                 val filename = ze.name
                 Log.d(LOG_TAG, "zipEntry fileName=$filename, compressedSize=${ze.compressedSize}, size=${ze.size}, crc=${ze.crc}")
@@ -240,25 +252,86 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                     Log.d(LOG_TAG, "canonicalPath: $outputFileCanonicalPath")
                     throw SecurityException("Invalid zip file")
                 }
-                
+
+                if (reportProgress) {
+                    // report progress
+                    val progress: Double = currentEntryIndex++ / (entriesCount - 1) * 100
+
+                    val map = zipEntryToMap(ze).toMutableMap()
+                    map["progress"] = progress
+
+                    val deferred = CompletableDeferred<ExtractOperation>()
+
+                    uiScope.launch {
+                        methodChannel?.invokeMethod("progress", map, object : MethodChannel.Result {
+
+                            override fun success(result: Any?) {
+                                Log.i(LOG_TAG, "invokeMethod - success: $result")
+                                when (result) {
+                                    "cancel" -> {
+                                        deferred.complete(ExtractOperation.cancel)
+                                    }
+                                    "skip" -> {
+                                        deferred.complete(ExtractOperation.skip)
+                                    }
+                                    else -> {
+                                        deferred.complete(ExtractOperation.extract)
+                                    }
+                                }
+                            }
+
+                            override fun error(code: String?, msg: String?, details: Any?) {
+                                Log.e(LOG_TAG, "invokeMethod - error: $msg")
+                                // ignore error and extract normally
+                                deferred.complete(ExtractOperation.extract)
+                            }
+
+                            override fun notImplemented() {
+                                Log.e(LOG_TAG, "invokeMethod - notImplemented")
+                                // ignore error and extract normally
+                                deferred.complete(ExtractOperation.extract)
+                            }
+                        })
+                    }
+                    Log.e(LOG_TAG, "Waiting extractOperation...")
+                    val extractOperation = deferred.await()
+                    Log.e(LOG_TAG, "...extractOperation=$extractOperation")
+                    if (extractOperation == ExtractOperation.skip) {
+                        continue
+                    } else if (extractOperation == ExtractOperation.cancel) {
+                        break
+                    }
+                }
+
                 // need to create any missing directories
                 if (ze.isDirectory) {
                     Log.d(LOG_TAG, "Creating directory: " + outputFile.path)
                     outputFile.mkdirs()
-                    continue
-                }
+                } else {
+                    val parentDir = outputFile.parentFile
+                    if (parentDir != null && !parentDir.exists()) {
+                        Log.d(LOG_TAG, "Creating directory: " + parentDir.path)
+                        parentDir.mkdirs()
+                    }
 
-                val parentDir = outputFile.parentFile
-                if (parentDir != null && !parentDir.exists()) {
-                    Log.d(LOG_TAG, "Creating directory: " + parentDir.path)
-                    parentDir.mkdirs()
-                }
-
-                Log.d(LOG_TAG, "Writing file: " + outputFile.path)
-                zipFile.getInputStream(ze).use { zis ->
-                    outputFile.outputStream().use { outputStream -> zis.copyTo(outputStream) }
+                    Log.d(LOG_TAG, "Writing entry to file: " + outputFile.path)
+                    zipFile.getInputStream(ze).use { zis ->
+                        outputFile.outputStream().use { outputStream -> zis.copyTo(outputStream) }
+                    }
                 }
             }
         }
+    }
+
+    private fun zipEntryToMap(ze: ZipEntry): Map<String, Any> {
+        return mapOf(
+                "name" to ze.name,
+                "isDirectory" to ze.isDirectory,
+                "comment" to ze.comment,
+                "modificationDate" to ze.time,
+                "uncompressedSize" to ze.size,
+                "compressedSize" to ze.compressedSize,
+                "crc" to ze.crc,
+                "compressionMethod" to (if (ze.method == DEFLATED) "deflated" else "none"))
     }
 }

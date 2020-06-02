@@ -49,6 +49,7 @@ class _MyAppState extends State<MyApp> {
     print("Start test");
     var zipFile = await _testZip();
     await _testUnzip(zipFile);
+    await _testUnzip(zipFile, progress: true);
     zipFile = await _testZipFiles();
     await _testUnzip(zipFile);
     print("DONE!");
@@ -90,7 +91,7 @@ class _MyAppState extends State<MyApp> {
     return zipFile;
   }
 
-  Future _testUnzip(File zipFile) async {
+  Future _testUnzip(File zipFile, {bool progress = false}) async {
     print("_appDataDir=" + _appDataDir.path);
 
     final destinationDir = Directory(_appDataDir.path + "/unzip");
@@ -103,7 +104,22 @@ class _MyAppState extends State<MyApp> {
     destinationDir.createSync();
     try {
       await FlutterArchive.unzip(
-          zipFile: zipFile, destinationDir: destinationDir);
+          zipFile: zipFile,
+          destinationDir: destinationDir,
+          onUnzipProgress: progress
+              ? (zipEntry, progress) {
+                  print('progress: ${progress.toStringAsFixed(1)}%');
+                  print('name: ${zipEntry.name}');
+                  print('isDirectory: ${zipEntry.isDirectory}');
+                  print(
+                      'modificationDate: ${zipEntry.modificationDate.toLocal().toIso8601String()}');
+                  print('uncompressedSize: ${zipEntry.uncompressedSize}');
+                  print('compressedSize: ${zipEntry.compressedSize}');
+                  print('compressionMethod: ${zipEntry.compressionMethod}');
+                  print('crc: ${zipEntry.crc}');
+                  return ExtractOperation.extract;
+                }
+              : null);
     } on PlatformException catch (e) {
       print(e);
     }
