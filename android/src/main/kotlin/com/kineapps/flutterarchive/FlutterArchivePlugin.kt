@@ -154,7 +154,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
 
     @Throws(IOException::class)
     private fun zip(sourceDirPath: String, zipFilePath: String, recurseSubDirs: Boolean?) {
-        val rootDirectory = File(sourceDirPath)
+        val rootDirectory = File(sourceDirPath).getParentFile()
 
         Log.i("zip", "Root directory: $sourceDirPath")
         Log.i("zip", "Zip file path: $zipFilePath")

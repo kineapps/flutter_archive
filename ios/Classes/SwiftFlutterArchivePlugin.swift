@@ -61,7 +61,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                 do {
                     try fileManager.zipItem(at: sourceURL,
                                             to: destinationURL,
-                                            shouldKeepParent: false,
+                                            shouldKeepParent: true,
                                             compressionMethod: .deflate)
                     DispatchQueue.main.async {
                         self.log("Created zip at: " + destinationURL.path)
