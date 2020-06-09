@@ -65,7 +65,7 @@ class _MyAppState extends State<MyApp> {
     print("Writing to zip file: " + zipFile.path);
 
     try {
-      await FlutterArchive.zipDirectory(
+      await ZipFile.createFromDirectory(
           sourceDir: storeDir, zipFile: zipFile, recurseSubDirs: true);
     } on PlatformException catch (e) {
       print(e);
@@ -83,7 +83,7 @@ class _MyAppState extends State<MyApp> {
     print("Writing files to zip file: " + zipFile.path);
 
     try {
-      await FlutterArchive.zipFiles(
+      await ZipFile.createFromFiles(
           sourceDir: storeDir, files: testFiles, zipFile: zipFile);
     } on PlatformException catch (e) {
       print(e);
@@ -103,10 +103,10 @@ class _MyAppState extends State<MyApp> {
     print("Extracting zip to directory: " + destinationDir.path);
     destinationDir.createSync();
     try {
-      await FlutterArchive.unzip(
+      await ZipFile.extractToDirectory(
           zipFile: zipFile,
           destinationDir: destinationDir,
-          onUnzipProgress: progress
+          onExtracting: progress
               ? (zipEntry, progress) {
                   print('progress: ${progress.toStringAsFixed(1)}%');
                   print('name: ${zipEntry.name}');

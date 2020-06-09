@@ -10,7 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 enum ExtractOperation { extract, skip, cancel }
-typedef OnUnzipProgress = ExtractOperation Function(
+typedef OnExtracting = ExtractOperation Function(
     ZipEntry zipEntry, double progress);
 
 String _extractOperationToString(ExtractOperation extractOperation) {
@@ -24,15 +24,15 @@ String _extractOperationToString(ExtractOperation extractOperation) {
   }
 }
 
-/// Utility class for zipping and unzipping ZIP archive files.
-class FlutterArchive {
+/// Utility class for creating and extracting zip archive files.
+class ZipFile {
   static const MethodChannel _channel = MethodChannel('flutter_archive');
 
   /// Compress and save all files in [sourceDir] to [zipFile].
   ///
   /// By default zip all subdirectories recursively. Set [recurseSubDirs]
   /// to false to disable recursive zipping.
-  static Future<void> zipDirectory(
+  static Future<void> createFromDirectory(
       {@required Directory sourceDir,
       @required File zipFile,
       bool recurseSubDirs = true}) async {
@@ -46,7 +46,7 @@ class FlutterArchive {
   /// Compress given list of [files] and save the resulted archive to [zipFile].
   /// [sourceDir] is the root directory of [files] (all [files] must reside
   /// under the [sourceDir]).
-  static Future<void> zipFiles(
+  static Future<void> createFromFiles(
       {@required Directory sourceDir,
       @required List<File> files,
       @required File zipFile}) async {
@@ -73,19 +73,19 @@ class FlutterArchive {
   }
 
   /// Extract [zipFile] to a given [destinationDir]. Optional callback function
-  /// [onUnzipProgress] is called before extracting a zip entry.
-  static Future<void> unzip(
+  /// [onExtracting] is called before extracting a zip entry.
+  static Future<void> extractToDirectory(
       {@required File zipFile,
       @required Directory destinationDir,
-      OnUnzipProgress onUnzipProgress}) async {
-    final reportProgress = onUnzipProgress != null;
+      OnExtracting onExtracting}) async {
+    final reportProgress = onExtracting != null;
     if (reportProgress) {
       _channel.setMethodCallHandler((call) {
         if (call.method == 'progress') {
           final args = Map<String, dynamic>.from(call.arguments as Map);
           final zipEntry = ZipEntry.fromMap(args);
           final progress = args["progress"] as double;
-          final result = onUnzipProgress(zipEntry, progress);
+          final result = onExtracting(zipEntry, progress);
           return Future.value(_extractOperationToString(result));
         }
         return Future.value();
