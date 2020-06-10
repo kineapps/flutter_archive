@@ -50,9 +50,11 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                                     details: nil))
                 return
             }
+            let includeBaseDirectory = args["includeBaseDirectory"] as? Bool == true
 
             log("sourceDir: " + sourceDir)
             log("zipFile: " + zipFile)
+            log("includeBaseDirectory: " + includeBaseDirectory.description)
 
             DispatchQueue.global(qos: .userInitiated).async {
                 let fileManager = FileManager()
@@ -61,7 +63,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                 do {
                     try fileManager.zipItem(at: sourceURL,
                                             to: destinationURL,
-                                            shouldKeepParent: false,
+                                            shouldKeepParent: includeBaseDirectory,
                                             compressionMethod: .deflate)
                     DispatchQueue.main.async {
                         self.log("Created zip at: " + destinationURL.path)
@@ -102,12 +104,17 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                                     details: nil))
                 return
             }
+            let includeBaseDirectory = args["includeBaseDirectory"] as? Bool == true
 
             log("files: " + files.joined(separator: ","))
             log("zipFile: " + zipFile)
+            log("includeBaseDirectory: " + includeBaseDirectory.description)
 
             DispatchQueue.global(qos: .userInitiated).async {
-                let sourceURL = URL(fileURLWithPath: sourceDir)
+                var sourceURL = URL(fileURLWithPath: sourceDir)
+                if includeBaseDirectory {
+                    sourceURL = sourceURL.deletingLastPathComponent()
+                }
                 let destinationURL = URL(fileURLWithPath: zipFile)
                 do {
                     // create zip archive
@@ -244,9 +251,9 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                     dispatchGroup.leave()
                 }
             }
-            
+
             currentEntryIndex += 1
-            
+
             log("Waiting...")
             dispatchGroup.wait()
             log("..waiting")
