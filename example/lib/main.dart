@@ -38,6 +38,7 @@ class _MyAppState extends State<MyApp> {
 
   final _appDataDir = Directory.systemTemp;
 
+  static const _dataFilesBaseDirectoryName = "store";
   final _dataFiles = {
     "file1.txt": r"abc",
     "file2.txt": r"åäö",
@@ -47,17 +48,29 @@ class _MyAppState extends State<MyApp> {
 
   Future _test() async {
     print("Start test");
-    var zipFile = await _testZip();
-    await _testUnzip(zipFile);
+    // test createFromDirectory
+    // case 1
+    var zipFile = await _testZip(includeBaseDirectory: false);
+    await _testUnzip(zipFile, zipIncludesBaseDirectory: false);
     await _testUnzip(zipFile, progress: true);
-    zipFile = await _testZipFiles();
-    await _testUnzip(zipFile);
+    // case 2
+    zipFile = await _testZip(includeBaseDirectory: true);
+    await _testUnzip(zipFile, zipIncludesBaseDirectory: true);
+
+    // test createFromFiles
+    // case 1
+    zipFile = await _testZipFiles(includeBaseDirectory: false);
+    await _testUnzip(zipFile, zipIncludesBaseDirectory: false);
+    // case 2
+    zipFile = await _testZipFiles(includeBaseDirectory: true);
+    await _testUnzip(zipFile, zipIncludesBaseDirectory: true);
     print("DONE!");
   }
 
-  Future<File> _testZip() async {
+  Future<File> _testZip({@required bool includeBaseDirectory}) async {
     print("_appDataDir=" + _appDataDir.path);
-    final storeDir = Directory(_appDataDir.path + "/store");
+    final storeDir =
+        Directory(_appDataDir.path + "/$_dataFilesBaseDirectoryName");
 
     _createTestFiles(storeDir);
 
@@ -66,16 +79,20 @@ class _MyAppState extends State<MyApp> {
 
     try {
       await ZipFile.createFromDirectory(
-          sourceDir: storeDir, zipFile: zipFile, recurseSubDirs: true);
+          sourceDir: storeDir,
+          zipFile: zipFile,
+          recurseSubDirs: true,
+          includeBaseDirectory: includeBaseDirectory);
     } on PlatformException catch (e) {
       print(e);
     }
     return zipFile;
   }
 
-  Future<File> _testZipFiles() async {
+  Future<File> _testZipFiles({@required bool includeBaseDirectory}) async {
     print("_appDataDir=" + _appDataDir.path);
-    final storeDir = Directory(_appDataDir.path + "/store");
+    final storeDir =
+        Directory(_appDataDir.path + "/$_dataFilesBaseDirectoryName");
 
     final testFiles = _createTestFiles(storeDir);
 
@@ -84,14 +101,18 @@ class _MyAppState extends State<MyApp> {
 
     try {
       await ZipFile.createFromFiles(
-          sourceDir: storeDir, files: testFiles, zipFile: zipFile);
+          sourceDir: storeDir,
+          files: testFiles,
+          zipFile: zipFile,
+          includeBaseDirectory: includeBaseDirectory);
     } on PlatformException catch (e) {
       print(e);
     }
     return zipFile;
   }
 
-  Future _testUnzip(File zipFile, {bool progress = false}) async {
+  Future _testUnzip(File zipFile,
+      {bool progress = false, bool zipIncludesBaseDirectory = false}) async {
     print("_appDataDir=" + _appDataDir.path);
 
     final destinationDir = Directory(_appDataDir.path + "/unzip");
@@ -125,7 +146,12 @@ class _MyAppState extends State<MyApp> {
     }
 
     // verify unzipped files
-    _verifyFiles(destinationDir);
+    if (zipIncludesBaseDirectory) {
+      _verifyFiles(
+          Directory(destinationDir.path + "/" + _dataFilesBaseDirectoryName));
+    } else {
+      _verifyFiles(destinationDir);
+    }
   }
 
   File _createZipFile(String fileName) {
@@ -166,7 +192,7 @@ class _MyAppState extends State<MyApp> {
     assert(extractedItems.whereType<File>().length == _dataFiles.length,
         "Invalid number of files");
     for (final fileName in _dataFiles.keys) {
-      final file = File(filesDir.path + "/" + fileName);
+      final file = File('${filesDir.path}/$fileName');
       print("Verifying file: " + file.path);
       assert(file.existsSync(), "File not found: " + file.path);
       final content = file.readAsStringSync();

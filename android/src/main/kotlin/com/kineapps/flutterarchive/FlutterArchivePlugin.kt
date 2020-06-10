@@ -100,10 +100,11 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                     try {
                         val sourceDir = call.argument<String>("sourceDir")
                         val zipFile = call.argument<String>("zipFile")
-                        val recurseSubDirs = call.argument<Boolean>("recurseSubDirs")
+                        val recurseSubDirs = call.argument<Boolean>("recurseSubDirs") == true
+                        val includeBaseDirectory = call.argument<Boolean>("includeBaseDirectory") == true
 
                         withContext(Dispatchers.IO) {
-                            zip(sourceDir!!, zipFile!!, recurseSubDirs)
+                            zip(sourceDir!!, zipFile!!, recurseSubDirs, includeBaseDirectory)
                         }
                         result.success(true)
                     } catch (e: Exception) {
@@ -118,9 +119,10 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                         val sourceDir = call.argument<String>("sourceDir")
                         val files = call.argument<List<String>>("files")
                         val zipFile = call.argument<String>("zipFile")
+                        val includeBaseDirectory = call.argument<Boolean>("includeBaseDirectory") == true
 
                         withContext(Dispatchers.IO) {
-                            zipFiles(sourceDir!!, files!!, zipFile!!)
+                            zipFiles(sourceDir!!, files!!, zipFile!!, includeBaseDirectory)
                         }
                         result.success(true)
                     } catch (e: Exception) {
@@ -153,15 +155,13 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
     }
 
     @Throws(IOException::class)
-    private fun zip(sourceDirPath: String, zipFilePath: String, recurseSubDirs: Boolean?) {
-        val rootDirectory = File(sourceDirPath)
+    private fun zip(sourceDirPath: String, zipFilePath: String, recurseSubDirs: Boolean, includeBaseDirectory: Boolean) {
+        Log.i("zip", "sourceDirPath: $sourceDirPath, zipFilePath: $zipFilePath, recurseSubDirs: $recurseSubDirs, includeBaseDirectory: $includeBaseDirectory")
 
-        Log.i("zip", "Root directory: $sourceDirPath")
-        Log.i("zip", "Zip file path: $zipFilePath")
-        Log.i("zip", "Sub directories: $recurseSubDirs")
+        val rootDirectory = if (includeBaseDirectory) File(sourceDirPath).parentFile else File(sourceDirPath)
 
         ZipOutputStream(BufferedOutputStream(FileOutputStream(zipFilePath))).use { zipOutputStream ->
-            addFilesInDirectoryToZip(zipOutputStream, rootDirectory, sourceDirPath, recurseSubDirs == true)
+            addFilesInDirectoryToZip(zipOutputStream, rootDirectory, sourceDirPath, recurseSubDirs)
         }
     }
 
@@ -202,12 +202,11 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
     }
 
     @Throws(IOException::class)
-    private fun zipFiles(sourceDirPath: String, relativeFilePaths: List<String>, zipFilePath: String) {
-        val rootDirectory = File(sourceDirPath)
-
-        Log.i("zip", "Root directory: $sourceDirPath")
+    private fun zipFiles(sourceDirPath: String, relativeFilePaths: List<String>, zipFilePath: String, includeBaseDirectory: Boolean) {
+        Log.i("zip", "sourceDirPath: $sourceDirPath, zipFilePath: $zipFilePath, includeBaseDirectory: $includeBaseDirectory")
         Log.i("zip", "Files: ${relativeFilePaths.joinToString(",")}")
-        Log.i("zip", "Zip file: $zipFilePath")
+
+        val rootDirectory = if (includeBaseDirectory) File(sourceDirPath).parentFile else File(sourceDirPath)
 
         ZipOutputStream(BufferedOutputStream(FileOutputStream(zipFilePath))).use { zipOutputStream ->
             for (relativeFilePath in relativeFilePaths) {

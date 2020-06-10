@@ -30,30 +30,44 @@ class ZipFile {
 
   /// Compress and save all files in [sourceDir] to [zipFile].
   ///
+  /// Set [includeBaseDirectory] to true to include the directory name from
+  /// [sourceDir] at the root of the archive. Set [includeBaseDirectory] to
+  /// false to include only the contents of the [sourceDir].
+  ///
   /// By default zip all subdirectories recursively. Set [recurseSubDirs]
   /// to false to disable recursive zipping.
   static Future<void> createFromDirectory(
       {@required Directory sourceDir,
       @required File zipFile,
+      bool includeBaseDirectory = false,
       bool recurseSubDirs = true}) async {
     await _channel.invokeMethod('zipDirectory', <String, dynamic>{
       'sourceDir': sourceDir.path,
       'zipFile': zipFile.path,
-      'recurseSubDirs': recurseSubDirs
+      'recurseSubDirs': recurseSubDirs,
+      'includeBaseDirectory': includeBaseDirectory
     });
   }
 
   /// Compress given list of [files] and save the resulted archive to [zipFile].
   /// [sourceDir] is the root directory of [files] (all [files] must reside
   /// under the [sourceDir]).
-  static Future<void> createFromFiles(
-      {@required Directory sourceDir,
-      @required List<File> files,
-      @required File zipFile}) async {
-    var sourceDirPath = sourceDir.path;
+  ///
+  /// Set [includeBaseDirectory] to true to include the directory name from
+  /// [sourceDir] at the root of the archive. Set [includeBaseDirectory] to
+  /// false to include only the contents of the [sourceDir].
+  static Future<void> createFromFiles({
+    @required Directory sourceDir,
+    @required List<File> files,
+    @required File zipFile,
+    bool includeBaseDirectory = false,
+  }) async {
+    var sourceDirPath =
+        includeBaseDirectory ? sourceDir.parent.path : sourceDir.path;
     if (!sourceDirPath.endsWith(Platform.pathSeparator)) {
       sourceDirPath += Platform.pathSeparator;
     }
+
     final sourceDirPathLen = sourceDirPath.length;
 
     final relativeFilePaths = <String>[];
@@ -69,6 +83,7 @@ class ZipFile {
       'sourceDir': sourceDir.path,
       'files': relativeFilePaths,
       'zipFile': zipFile.path,
+      'includeBaseDirectory': includeBaseDirectory
     });
   }
 
