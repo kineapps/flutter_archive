@@ -10,7 +10,7 @@ Create and extract ZIP archive files. Uses Android/iOS platform APIs for high pe
 - Zip all files in a directory (optionally recursively).
 - Zip a given list of files.
 - Unzip an archive file to a given directory.
-- Progress reporting while extracting an acrhive. Get details of zip entries being extracted and allow skip extracting a zip entry.
+- Progress reporting while extracting an archive. Get details of zip entries being extracted and allow skip extracting a zip entry.
 
 ## Examples
 
