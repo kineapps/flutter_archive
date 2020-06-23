@@ -1,3 +1,10 @@
+## 1.0.0
+
+- Renamed FlutterArchive as ZipFile, renamed also methods
+- Support for progress reporting in unzip (ZipFile.extractToDirectory)
+- Added support for including base directory name to file paths
+- [iOS] Upgraded to ZIPFoundation 0.9.11
+
 ## 0.1.4
 
 - [Android] Fixed: unzipping some files could fail to "java.util.zip.ZipException: invalid stored block lengths"
