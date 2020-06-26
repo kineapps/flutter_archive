@@ -1,3 +1,7 @@
+## 1.0.1
+
+- Fixed "MissingPluginException"
+
 ## 1.0.0
 
 - Renamed FlutterArchive as ZipFile, renamed also methods
