@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.BufferedOutputStream
+import java.io.Closeable
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -234,7 +235,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
 
         val uiScope = CoroutineScope(Dispatchers.Main)
 
-        ZipFile(zipFilePath).use { zipFile ->
+        ZipFileEx(zipFilePath).use { zipFile ->
             val entriesCount = zipFile.size().toDouble()
             var currentEntryIndex = 0.0
             for (ze in zipFile.entries()) {
@@ -333,4 +334,8 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                 "crc" to ze.crc,
                 "compressionMethod" to (if (ze.method == DEFLATED) "deflated" else "none"))
     }
+
+    // This is needed because ZipFile implements Closeable only starting from API 19 and
+    // we support >=16
+    class ZipFileEx(name: String?) : ZipFile(name), Closeable
 }
