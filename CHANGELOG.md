@@ -1,3 +1,8 @@
+## 1.0.2
+
+- [Android] Fixed: java.lang.ClassCastException: java.util.zip.ZipFile
+  cannot be cast to java.io.Closeable occurring if API level < 19
+
 ## 1.0.1
 
 - Fixed "MissingPluginException"
