@@ -95,28 +95,47 @@ class ZipFile {
       OnExtracting onExtracting}) async {
     final reportProgress = onExtracting != null;
     if (reportProgress) {
-      _channel.setMethodCallHandler((call) {
-        if (call.method == 'progress') {
-          final args = Map<String, dynamic>.from(call.arguments as Map);
-          final zipEntry = ZipEntry.fromMap(args);
-          final progress = args["progress"] as double;
-          final result = onExtracting(zipEntry, progress);
-          return Future.value(_extractOperationToString(result));
-        }
-        return Future.value();
-      });
+      if (!_isMethodCallHandlerSet) {
+        _channel.setMethodCallHandler(_channelMethodCallHandler);
+        _isMethodCallHandlerSet = true;
+      }
     }
+    final jobId = ++_jobId;
     try {
+      if (onExtracting != null) {
+        _onExtractingHandlerByJobId[jobId] = onExtracting;
+      }
+
       await _channel.invokeMethod('unzip', <String, dynamic>{
         'zipFile': zipFile.path,
         'destinationDir': destinationDir.path,
         'reportProgress': reportProgress,
+        'jobId': jobId,
       });
     } finally {
-      if (reportProgress) {
-        _channel.setMethodCallHandler(null);
+      _onExtractingHandlerByJobId.remove(jobId);
+    }
+  }
+
+  static bool _isMethodCallHandlerSet = false;
+  static int _jobId = 0;
+  static final _onExtractingHandlerByJobId = Map<int, OnExtracting>();
+
+  static Future<dynamic> _channelMethodCallHandler(MethodCall call) {
+    if (call.method == 'progress') {
+      final args = Map<String, dynamic>.from(call.arguments as Map);
+      final jobId = args["jobId"] as int ?? 0;
+      final onExtractHandler = _onExtractingHandlerByJobId[jobId];
+      if (onExtractHandler != null) {
+        final zipEntry = ZipEntry.fromMap(args);
+        final progress = args["progress"] as double;
+        final result = onExtractHandler(zipEntry, progress);
+        return Future.value(_extractOperationToString(result));
+      } else {
+        return Future.value();
       }
     }
+    return Future.value();
   }
 }
 

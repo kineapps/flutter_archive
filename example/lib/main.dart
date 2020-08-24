@@ -116,19 +116,31 @@ class _MyAppState extends State<MyApp> {
     print("_appDataDir=" + _appDataDir.path);
 
     final destinationDir = Directory(_appDataDir.path + "/unzip");
+    final destinationDir2 = Directory(_appDataDir.path + "/unzip2");
+
     if (destinationDir.existsSync()) {
       print("Deleting existing unzip directory: " + destinationDir.path);
       destinationDir.deleteSync(recursive: true);
     }
+    if (destinationDir2.existsSync()) {
+      print("Deleting existing unzip directory: " + destinationDir2.path);
+      destinationDir2.deleteSync(recursive: true);
+    }
 
     print("Extracting zip to directory: " + destinationDir.path);
     destinationDir.createSync();
+    // test concurrent extraction
+    final extractFutures = List<Future>();
+    int onExtractingCallCount1 = 0;
+    int onExtractingCallCount2 = 0;
     try {
-      await ZipFile.extractToDirectory(
+      extractFutures.add(ZipFile.extractToDirectory(
           zipFile: zipFile,
           destinationDir: destinationDir,
           onExtracting: progress
               ? (zipEntry, progress) {
+                  ++onExtractingCallCount1;
+                  print('Extract #1:');
                   print('progress: ${progress.toStringAsFixed(1)}%');
                   print('name: ${zipEntry.name}');
                   print('isDirectory: ${zipEntry.isDirectory}');
@@ -140,7 +152,31 @@ class _MyAppState extends State<MyApp> {
                   print('crc: ${zipEntry.crc}');
                   return ExtractOperation.extract;
                 }
-              : null);
+              : null));
+
+      extractFutures.add(ZipFile.extractToDirectory(
+          zipFile: zipFile,
+          destinationDir: destinationDir2,
+          onExtracting: progress
+              ? (zipEntry, progress) {
+                  ++onExtractingCallCount2;
+                  print('Extract #2:');
+                  print('progress: ${progress.toStringAsFixed(1)}%');
+                  print('name: ${zipEntry.name}');
+                  print('isDirectory: ${zipEntry.isDirectory}');
+                  print(
+                      'modificationDate: ${zipEntry.modificationDate.toLocal().toIso8601String()}');
+                  print('uncompressedSize: ${zipEntry.uncompressedSize}');
+                  print('compressedSize: ${zipEntry.compressedSize}');
+                  print('compressionMethod: ${zipEntry.compressionMethod}');
+                  print('crc: ${zipEntry.crc}');
+                  return ExtractOperation.extract;
+                }
+              : null));
+
+      await Future.wait(extractFutures);
+      assert(onExtractingCallCount1 == onExtractingCallCount2);
+      assert(!progress || onExtractingCallCount1 > 0);
     } on PlatformException catch (e) {
       print(e);
     }
@@ -149,8 +185,11 @@ class _MyAppState extends State<MyApp> {
     if (zipIncludesBaseDirectory) {
       _verifyFiles(
           Directory(destinationDir.path + "/" + _dataFilesBaseDirectoryName));
+      _verifyFiles(
+          Directory(destinationDir2.path + "/" + _dataFilesBaseDirectoryName));
     } else {
       _verifyFiles(destinationDir);
+      _verifyFiles(destinationDir2);
     }
   }
 

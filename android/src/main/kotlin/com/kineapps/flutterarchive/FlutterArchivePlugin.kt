@@ -138,10 +138,11 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                         val zipFile = call.argument<String>("zipFile")
                         val destinationDir = call.argument<String>("destinationDir")
                         val reportProgress = call.argument<Boolean>("reportProgress")
+                        val jobId = call.argument<Int>("jobId")
 
                         Log.d(LOG_TAG, "onMethodCall / unzip...")
                         withContext(Dispatchers.IO) {
-                            unzip(zipFile!!, destinationDir!!, reportProgress == true)
+                            unzip(zipFile!!, destinationDir!!, reportProgress == true, jobId!!)
                         }
                         Log.d(LOG_TAG, "...onMethodCall / unzip")
                         result.success(true)
@@ -226,7 +227,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
     }
 
     @Throws(IOException::class)
-    private suspend fun unzip(zipFilePath: String, destinationDirPath: String, reportProgress: Boolean) {
+    private suspend fun unzip(zipFilePath: String, destinationDirPath: String, reportProgress: Boolean, jobId: Int) {
         val destinationDir = File(destinationDirPath)
 
         Log.d(LOG_TAG, "destinationDir.path: ${destinationDir.path}")
@@ -258,6 +259,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                     val progress: Double = currentEntryIndex++ / (entriesCount - 1) * 100
 
                     val map = zipEntryToMap(ze).toMutableMap()
+                    map["jobId"] = jobId
                     map["progress"] = progress
 
                     val deferred = CompletableDeferred<ExtractOperation>()
