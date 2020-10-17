@@ -1,3 +1,7 @@
+## 1.0.3
+
+- Fixed #13: Extracting multiple zip files in parallel does not work when using onExtracting callback
+
 ## 1.0.2
 
 - [Android] Fixed: java.lang.ClassCastException: java.util.zip.ZipFile
