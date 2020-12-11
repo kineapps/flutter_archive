@@ -32,6 +32,8 @@ flutter:
         pluginClass: FlutterArchivePlugin
       ios:
         pluginClass: FlutterArchivePlugin
+      macos:
+        pluginClass: FlutterArchivePlugin
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
   #  - images/a_dot_burr.jpeg
