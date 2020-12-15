@@ -1,3 +1,7 @@
+## 2.0.0
+
+- Added support for macOS (thanks for the PR to [tonycn](https://github.com/tonycn))
+
 ## 1.0.3
 
 - Fixed #13: Extracting multiple zip files in parallel does not work when using onExtracting callback

@@ -1,11 +1,11 @@
 # flutter_archive
 
-Create and extract ZIP archive files. Uses Android/iOS platform APIs for high performance and optimal memory usage.
+Create and extract ZIP archive files. Uses Android/iOS/macOS platform APIs for high performance and optimal memory usage.
 
 ## Features
 
-- Supports Android and iOS.
-- Modern plugin implementation based on Kotlin (Android) and Swift (iOS).
+- Supports Android (API level 16+), iOS 10+ and macOS 10.11+.
+- Modern plugin implementation based on Kotlin (Android) and Swift (iOS/macOS).
 - Uses background processing to keep UI responsive.
 - Zip all files in a directory (optionally recursively).
 - Zip a given list of files.
