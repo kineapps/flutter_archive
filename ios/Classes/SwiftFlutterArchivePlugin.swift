@@ -3,8 +3,13 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
+
+#if os(OSX)
+import FlutterMacOS
+#elseif os(iOS)
 import Flutter
-import UIKit
+#endif
+
 /// https://github.com/weichsel/ZIPFoundation
 import ZIPFoundation
 
@@ -22,7 +27,13 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
   let channel: FlutterMethodChannel
 
   public static func register(with registrar: FlutterPluginRegistrar) {
+    
+    #if os(OSX)
+    let channel = FlutterMethodChannel(name: "flutter_archive", binaryMessenger: registrar.messenger)
+    #elseif os(iOS)
     let channel = FlutterMethodChannel(name: "flutter_archive", binaryMessenger: registrar.messenger())
+    #endif
+    
     let instance = SwiftFlutterArchivePlugin(channel)
     registrar.addMethodCallDelegate(instance, channel: channel)
   }

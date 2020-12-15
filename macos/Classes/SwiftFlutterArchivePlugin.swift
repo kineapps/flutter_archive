@@ -1,0 +1,1 @@
+../../ios/Classes/SwiftFlutterArchivePlugin.swift
