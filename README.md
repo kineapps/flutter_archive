@@ -4,7 +4,7 @@ Create and extract ZIP archive files. Uses Android/iOS/macOS platform APIs for h
 
 ## Features
 
-- Supports Android (API level 16+), iOS 10+ and macOS 10.11+.
+- Supports Android (API level 16+), iOS 9+ and macOS 10.11+.
 - Modern plugin implementation based on Kotlin (Android) and Swift (iOS/macOS).
 - Uses background processing to keep UI responsive.
 - Zip all files in a directory (optionally recursively).

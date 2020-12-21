@@ -17,7 +17,8 @@ A new flutter plugin project.
   s.dependency 'Flutter'
   s.dependency 'ZIPFoundation', '0.9.11'
 
-  s.ios.deployment_target = '10.0'
+  s.ios.deployment_target = '9.0'
+
   # https://github.com/flutter/flutter/issues/40289
   s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
 end
