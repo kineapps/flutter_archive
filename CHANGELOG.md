@@ -1,3 +1,7 @@
+## 2.0.1
+
+- Added support for iOS 9
+
 ## 2.0.0
 
 - Added support for macOS (thanks for the PR to [tonycn](https://github.com/tonycn))
