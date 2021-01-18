@@ -130,7 +130,7 @@ class _MyAppState extends State<MyApp> {
     print("Extracting zip to directory: " + destinationDir.path);
     destinationDir.createSync();
     // test concurrent extraction
-    final extractFutures = List<Future>();
+    final extractFutures = <Future>[];
     int onExtractingCallCount1 = 0;
     int onExtractingCallCount2 = 0;
     try {
