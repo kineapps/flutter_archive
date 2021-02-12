@@ -41,7 +41,7 @@ class ZipFile {
       @required File zipFile,
       bool includeBaseDirectory = false,
       bool recurseSubDirs = true}) async {
-    await _channel.invokeMethod('zipDirectory', <String, dynamic>{
+    await _channel.invokeMethod<void>('zipDirectory', <String, dynamic>{
       'sourceDir': sourceDir.path,
       'zipFile': zipFile.path,
       'recurseSubDirs': recurseSubDirs,
@@ -79,7 +79,7 @@ class ZipFile {
       assert(!relativeFilePath.startsWith(Platform.pathSeparator));
       relativeFilePaths.add(relativeFilePath);
     });
-    await _channel.invokeMethod('zipFiles', <String, dynamic>{
+    await _channel.invokeMethod<void>('zipFiles', <String, dynamic>{
       'sourceDir': sourceDir.path,
       'files': relativeFilePaths,
       'zipFile': zipFile.path,
@@ -106,7 +106,7 @@ class ZipFile {
         _onExtractingHandlerByJobId[jobId] = onExtracting;
       }
 
-      await _channel.invokeMethod('unzip', <String, dynamic>{
+      await _channel.invokeMethod<void>('unzip', <String, dynamic>{
         'zipFile': zipFile.path,
         'destinationDir': destinationDir.path,
         'reportProgress': reportProgress,
@@ -130,12 +130,12 @@ class ZipFile {
         final zipEntry = ZipEntry.fromMap(args);
         final progress = args["progress"] as double;
         final result = onExtractHandler(zipEntry, progress);
-        return Future.value(_extractOperationToString(result));
+        return Future<void>.value(_extractOperationToString(result));
       } else {
-        return Future.value();
+        return Future<void>.value();
       }
     }
-    return Future.value();
+    return Future<void>.value();
   }
 }
 

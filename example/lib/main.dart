@@ -174,7 +174,7 @@ class _MyAppState extends State<MyApp> {
                 }
               : null));
 
-      await Future.wait(extractFutures);
+      await Future.wait<void>(extractFutures);
       assert(onExtractingCallCount1 == onExtractingCallCount2);
       assert(!progress || onExtractingCallCount1 > 0);
     } on PlatformException catch (e) {
