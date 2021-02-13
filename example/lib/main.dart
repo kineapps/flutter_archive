@@ -68,14 +68,14 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<File> _testZip({@required bool includeBaseDirectory}) async {
-    print("_appDataDir=" + _appDataDir.path);
+    print("_appDataDir=${_appDataDir.path}");
     final storeDir =
-        Directory(_appDataDir.path + "/$_dataFilesBaseDirectoryName");
+        Directory("${_appDataDir.path}${"/$_dataFilesBaseDirectoryName"}");
 
     _createTestFiles(storeDir);
 
     final zipFile = _createZipFile("testZip.zip");
-    print("Writing to zip file: " + zipFile.path);
+    print("Writing to zip file: ${zipFile.path}");
 
     try {
       await ZipFile.createFromDirectory(
@@ -90,14 +90,14 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<File> _testZipFiles({@required bool includeBaseDirectory}) async {
-    print("_appDataDir=" + _appDataDir.path);
+    print("_appDataDir=${_appDataDir.path}");
     final storeDir =
-        Directory(_appDataDir.path + "/$_dataFilesBaseDirectoryName");
+        Directory("${_appDataDir.path}${"/$_dataFilesBaseDirectoryName"}");
 
     final testFiles = _createTestFiles(storeDir);
 
     final zipFile = _createZipFile("testZipFiles.zip");
-    print("Writing files to zip file: " + zipFile.path);
+    print("Writing files to zip file: ${zipFile.path}");
 
     try {
       await ZipFile.createFromFiles(
@@ -113,21 +113,21 @@ class _MyAppState extends State<MyApp> {
 
   Future _testUnzip(File zipFile,
       {bool progress = false, bool zipIncludesBaseDirectory = false}) async {
-    print("_appDataDir=" + _appDataDir.path);
+    print("_appDataDir=${_appDataDir.path}");
 
-    final destinationDir = Directory(_appDataDir.path + "/unzip");
-    final destinationDir2 = Directory(_appDataDir.path + "/unzip2");
+    final destinationDir = Directory("${_appDataDir.path}/unzip");
+    final destinationDir2 = Directory("${_appDataDir.path}/unzip2");
 
     if (destinationDir.existsSync()) {
-      print("Deleting existing unzip directory: " + destinationDir.path);
+      print("Deleting existing unzip directory: ${destinationDir.path}");
       destinationDir.deleteSync(recursive: true);
     }
     if (destinationDir2.existsSync()) {
-      print("Deleting existing unzip directory: " + destinationDir2.path);
+      print("Deleting existing unzip directory: ${destinationDir2.path}");
       destinationDir2.deleteSync(recursive: true);
     }
 
-    print("Extracting zip to directory: " + destinationDir.path);
+    print("Extracting zip to directory: ${destinationDir.path}");
     destinationDir.createSync();
     // test concurrent extraction
     final extractFutures = <Future>[];
@@ -184,9 +184,9 @@ class _MyAppState extends State<MyApp> {
     // verify unzipped files
     if (zipIncludesBaseDirectory) {
       _verifyFiles(
-          Directory(destinationDir.path + "/" + _dataFilesBaseDirectoryName));
+          Directory("${destinationDir.path}/$_dataFilesBaseDirectoryName"));
       _verifyFiles(
-          Directory(destinationDir2.path + "/" + _dataFilesBaseDirectoryName));
+          Directory("${destinationDir2.path}/$_dataFilesBaseDirectoryName"));
     } else {
       _verifyFiles(destinationDir);
       _verifyFiles(destinationDir2);
@@ -194,11 +194,11 @@ class _MyAppState extends State<MyApp> {
   }
 
   File _createZipFile(String fileName) {
-    final zipFilePath = _appDataDir.path + "/" + fileName;
+    final zipFilePath = "${_appDataDir.path}/$fileName";
     final zipFile = File(zipFilePath);
 
     if (zipFile.existsSync()) {
-      print("Deleting existing zip file: " + zipFile.path);
+      print("Deleting existing zip file: ${zipFile.path}");
       zipFile.deleteSync();
     }
     return zipFile;
@@ -211,9 +211,9 @@ class _MyAppState extends State<MyApp> {
     storeDir.createSync();
     final files = <File>[];
     for (final fileName in _dataFiles.keys) {
-      final file = File(storeDir.path + "/" + fileName);
+      final file = File("${storeDir.path}/$fileName");
       file.createSync(recursive: true);
-      print("Writing file: " + file.path);
+      print("Writing file: ${file.path}");
       file.writeAsStringSync(_dataFiles[fileName]);
       files.add(file);
     }
@@ -232,11 +232,11 @@ class _MyAppState extends State<MyApp> {
         "Invalid number of files");
     for (final fileName in _dataFiles.keys) {
       final file = File('${filesDir.path}/$fileName');
-      print("Verifying file: " + file.path);
-      assert(file.existsSync(), "File not found: " + file.path);
+      print("Verifying file: ${file.path}");
+      assert(file.existsSync(), "File not found: ${file.path}");
       final content = file.readAsStringSync();
       assert(content == _dataFiles[fileName],
-          "Invalid file content: " + file.path);
+          "Invalid file content: ${file.path}");
     }
     print("All files ok");
   }
