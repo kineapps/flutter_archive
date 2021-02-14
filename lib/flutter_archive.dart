@@ -71,14 +71,14 @@ class ZipFile {
     final sourceDirPathLen = sourceDirPath.length;
 
     final relativeFilePaths = <String>[];
-    files.forEach((f) {
+    for (final f in files) {
       if (!f.path.startsWith(sourceDirPath)) {
         throw Exception('Files must reside under the rootDir');
       }
       final relativeFilePath = f.path.substring(sourceDirPathLen);
       assert(!relativeFilePath.startsWith(Platform.pathSeparator));
       relativeFilePaths.add(relativeFilePath);
-    });
+    }
     await _channel.invokeMethod<void>('zipFiles', <String, dynamic>{
       'sourceDir': sourceDir.path,
       'files': relativeFilePaths,

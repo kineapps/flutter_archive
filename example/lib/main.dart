@@ -29,7 +29,7 @@ class _MyAppState extends State<MyApp> {
         body: Center(
           child: RaisedButton(
             child: const Text("Test"),
-            onPressed: () => _test(),
+            onPressed: _test,
           ),
         ),
       ),
