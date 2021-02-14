@@ -119,7 +119,7 @@ class ZipFile {
 
   static bool _isMethodCallHandlerSet = false;
   static int _jobId = 0;
-  static final _onExtractingHandlerByJobId = Map<int, OnExtracting>();
+  static final _onExtractingHandlerByJobId = <int, OnExtracting>{};
 
   static Future<dynamic> _channelMethodCallHandler(MethodCall call) {
     if (call.method == 'progress') {
@@ -130,7 +130,7 @@ class ZipFile {
         final zipEntry = ZipEntry.fromMap(args);
         final progress = args["progress"] as double;
         final result = onExtractHandler(zipEntry, progress);
-        return Future<void>.value(_extractOperationToString(result));
+        return Future<String>.value(_extractOperationToString(result));
       } else {
         return Future<void>.value();
       }

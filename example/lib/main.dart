@@ -40,10 +40,10 @@ class _MyAppState extends State<MyApp> {
 
   static const _dataFilesBaseDirectoryName = "store";
   final _dataFiles = {
-    "file1.txt": r"abc",
-    "file2.txt": r"åäö",
+    "file1.txt": "abc",
+    "file2.txt": "åäö",
     "subdir1/file3.txt": r"@_£$",
-    "subdir1/subdir11/file4.txt": r"123",
+    "subdir1/subdir11/file4.txt": "123",
   };
 
   Future _test() async {
