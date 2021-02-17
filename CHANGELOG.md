@@ -1,3 +1,8 @@
+## 2.0.2
+
+- Fixed minor lint issues
+- Experimental fix to #26 (publish plugin from Mac)
+
 ## 2.0.1
 
 - Added support for iOS 9
