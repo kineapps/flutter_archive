@@ -6,7 +6,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 enum ExtractOperation { extract, skip, cancel }
@@ -37,8 +36,8 @@ class ZipFile {
   /// By default zip all subdirectories recursively. Set [recurseSubDirs]
   /// to false to disable recursive zipping.
   static Future<void> createFromDirectory(
-      {@required Directory sourceDir,
-      @required File zipFile,
+      {required Directory sourceDir,
+      required File zipFile,
       bool includeBaseDirectory = false,
       bool recurseSubDirs = true}) async {
     await _channel.invokeMethod<void>('zipDirectory', <String, dynamic>{
@@ -57,9 +56,9 @@ class ZipFile {
   /// [sourceDir] at the root of the archive. Set [includeBaseDirectory] to
   /// false to include only the contents of the [sourceDir].
   static Future<void> createFromFiles({
-    @required Directory sourceDir,
-    @required List<File> files,
-    @required File zipFile,
+    required Directory sourceDir,
+    required List<File> files,
+    required File zipFile,
     bool includeBaseDirectory = false,
   }) async {
     var sourceDirPath =
@@ -90,9 +89,9 @@ class ZipFile {
   /// Extract [zipFile] to a given [destinationDir]. Optional callback function
   /// [onExtracting] is called before extracting a zip entry.
   static Future<void> extractToDirectory(
-      {@required File zipFile,
-      @required Directory destinationDir,
-      OnExtracting onExtracting}) async {
+      {required File zipFile,
+      required Directory destinationDir,
+      OnExtracting? onExtracting}) async {
     final reportProgress = onExtracting != null;
     if (reportProgress) {
       if (!_isMethodCallHandlerSet) {
@@ -124,11 +123,11 @@ class ZipFile {
   static Future<dynamic> _channelMethodCallHandler(MethodCall call) {
     if (call.method == 'progress') {
       final args = Map<String, dynamic>.from(call.arguments as Map);
-      final jobId = args["jobId"] as int ?? 0;
+      final jobId = args["jobId"] as int? ?? 0;
       final onExtractHandler = _onExtractingHandlerByJobId[jobId];
       if (onExtractHandler != null) {
         final zipEntry = ZipEntry.fromMap(args);
-        final progress = args["progress"] as double;
+        final progress = args["progress"] as double? ?? 0;
         final result = onExtractHandler(zipEntry, progress);
         return Future<String>.value(_extractOperationToString(result));
       } else {
@@ -143,8 +142,8 @@ enum CompressionMethod { none, deflated }
 
 class ZipEntry {
   const ZipEntry(
-      {this.name,
-      this.isDirectory,
+      {required this.name,
+      required this.isDirectory,
       this.modificationDate,
       this.uncompressedSize,
       this.compressedSize,
@@ -153,13 +152,13 @@ class ZipEntry {
 
   factory ZipEntry.fromMap(Map<String, dynamic> map) {
     return ZipEntry(
-      name: map['name'] as String,
-      isDirectory: map['isDirectory'] as bool == true,
+      name: map['name'] as String? ?? '',
+      isDirectory: (map['isDirectory'] as bool?) == true,
       modificationDate: DateTime.fromMillisecondsSinceEpoch(
-          map['modificationDate'] as int ?? 0),
-      uncompressedSize: map['uncompressedSize'] as int,
-      compressedSize: map['compressedSize'] as int,
-      crc: map['crc'] as int,
+          map['modificationDate'] as int? ?? 0),
+      uncompressedSize: map['uncompressedSize'] as int?,
+      compressedSize: map['compressedSize'] as int?,
+      crc: map['crc'] as int?,
       compressionMethod: map['compressionMethod'] == 'none'
           ? CompressionMethod.none
           : CompressionMethod.deflated,
@@ -168,9 +167,9 @@ class ZipEntry {
 
   final String name;
   final bool isDirectory;
-  final DateTime modificationDate;
-  final int uncompressedSize;
-  final int compressedSize;
-  final int crc;
-  final CompressionMethod compressionMethod;
+  final DateTime? modificationDate;
+  final int? uncompressedSize;
+  final int? compressedSize;
+  final int? crc;
+  final CompressionMethod? compressionMethod;
 }

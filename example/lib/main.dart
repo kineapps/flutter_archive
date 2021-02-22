@@ -27,7 +27,7 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin test app'),
         ),
         body: Center(
-          child: RaisedButton(
+          child: ElevatedButton(
             onPressed: _test,
             child: const Text("Test"),
           ),
@@ -67,7 +67,7 @@ class _MyAppState extends State<MyApp> {
     print("DONE!");
   }
 
-  Future<File> _testZip({@required bool includeBaseDirectory}) async {
+  Future<File> _testZip({required bool includeBaseDirectory}) async {
     print("_appDataDir=${_appDataDir.path}");
     final storeDir =
         Directory("${_appDataDir.path}${"/$_dataFilesBaseDirectoryName"}");
@@ -89,7 +89,7 @@ class _MyAppState extends State<MyApp> {
     return zipFile;
   }
 
-  Future<File> _testZipFiles({@required bool includeBaseDirectory}) async {
+  Future<File> _testZipFiles({required bool includeBaseDirectory}) async {
     print("_appDataDir=${_appDataDir.path}");
     final storeDir =
         Directory("${_appDataDir.path}${"/$_dataFilesBaseDirectoryName"}");
@@ -145,7 +145,7 @@ class _MyAppState extends State<MyApp> {
                   print('name: ${zipEntry.name}');
                   print('isDirectory: ${zipEntry.isDirectory}');
                   print(
-                      'modificationDate: ${zipEntry.modificationDate.toLocal().toIso8601String()}');
+                      'modificationDate: ${zipEntry.modificationDate!.toLocal().toIso8601String()}');
                   print('uncompressedSize: ${zipEntry.uncompressedSize}');
                   print('compressedSize: ${zipEntry.compressedSize}');
                   print('compressionMethod: ${zipEntry.compressionMethod}');
@@ -165,7 +165,7 @@ class _MyAppState extends State<MyApp> {
                   print('name: ${zipEntry.name}');
                   print('isDirectory: ${zipEntry.isDirectory}');
                   print(
-                      'modificationDate: ${zipEntry.modificationDate.toLocal().toIso8601String()}');
+                      'modificationDate: ${zipEntry.modificationDate!.toLocal().toIso8601String()}');
                   print('uncompressedSize: ${zipEntry.uncompressedSize}');
                   print('compressedSize: ${zipEntry.compressedSize}');
                   print('compressionMethod: ${zipEntry.compressionMethod}');
@@ -214,7 +214,7 @@ class _MyAppState extends State<MyApp> {
       final file = File("${storeDir.path}/$fileName");
       file.createSync(recursive: true);
       print("Writing file: ${file.path}");
-      file.writeAsStringSync(_dataFiles[fileName]);
+      file.writeAsStringSync(_dataFiles[fileName]!);
       files.add(file);
     }
 
