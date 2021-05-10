@@ -50,11 +50,11 @@ class _MyAppState extends State<MyApp> {
     print("Start test");
     // test createFromDirectory
     // case 1
-    var zipFile = await _testZip(includeBaseDirectory: false);
+    var zipFile = await _testZip(includeBaseDirectory: false, progress: true);
     await _testUnzip(zipFile, zipIncludesBaseDirectory: false);
     await _testUnzip(zipFile, progress: true);
     // case 2
-    zipFile = await _testZip(includeBaseDirectory: true);
+    zipFile = await _testZip(includeBaseDirectory: true, progress: false);
     await _testUnzip(zipFile, zipIncludesBaseDirectory: true);
 
     // test createFromFiles
@@ -64,10 +64,12 @@ class _MyAppState extends State<MyApp> {
     // case 2
     zipFile = await _testZipFiles(includeBaseDirectory: true);
     await _testUnzip(zipFile, zipIncludesBaseDirectory: true);
+
     print("DONE!");
   }
 
-  Future<File> _testZip({required bool includeBaseDirectory}) async {
+  Future<File> _testZip(
+      {required bool includeBaseDirectory, bool progress = false}) async {
     print("_appDataDir=${_appDataDir.path}");
     final storeDir =
         Directory("${_appDataDir.path}${"/$_dataFilesBaseDirectoryName"}");
@@ -77,12 +79,26 @@ class _MyAppState extends State<MyApp> {
     final zipFile = _createZipFile("testZip.zip");
     print("Writing to zip file: ${zipFile.path}");
 
+    int onProgressCallCount1 = 0;
+
     try {
       await ZipFile.createFromDirectory(
-          sourceDir: storeDir,
-          zipFile: zipFile,
-          recurseSubDirs: true,
-          includeBaseDirectory: includeBaseDirectory);
+        sourceDir: storeDir,
+        zipFile: zipFile,
+        recurseSubDirs: true,
+        includeBaseDirectory: includeBaseDirectory,
+        onZipping: progress
+            ? (fileName, isDirectory, progress) {
+                ++onProgressCallCount1;
+                print('Zip #1:');
+                print('progress: ${progress.toStringAsFixed(1)}%');
+                print('name: $fileName');
+                print('isDirectory: $isDirectory');
+                return ProgressOperation.includeItem;
+              }
+            : null,
+      );
+      assert(!progress || onProgressCallCount1 > 0);
     } on PlatformException catch (e) {
       print(e);
     }
@@ -150,7 +166,7 @@ class _MyAppState extends State<MyApp> {
                   print('compressedSize: ${zipEntry.compressedSize}');
                   print('compressionMethod: ${zipEntry.compressionMethod}');
                   print('crc: ${zipEntry.crc}');
-                  return ExtractOperation.extract;
+                  return ProgressOperation.includeItem;
                 }
               : null));
 
@@ -170,7 +186,7 @@ class _MyAppState extends State<MyApp> {
                   print('compressedSize: ${zipEntry.compressedSize}');
                   print('compressionMethod: ${zipEntry.compressionMethod}');
                   print('crc: ${zipEntry.crc}');
-                  return ExtractOperation.extract;
+                  return ProgressOperation.includeItem;
                 }
               : null));
 
@@ -227,6 +243,9 @@ class _MyAppState extends State<MyApp> {
   void _verifyFiles(Directory filesDir) {
     print("Verifying files at: ${filesDir.path}");
     final extractedItems = filesDir.listSync(recursive: true);
+    for (final item in extractedItems) {
+      print("extractedItem: ${item.path}");
+    }
     print("File count: ${extractedItems.length}");
     assert(extractedItems.whereType<File>().length == _dataFiles.length,
         "Invalid number of files");

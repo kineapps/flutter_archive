@@ -8,18 +8,21 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 
-enum ExtractOperation { extract, skip, cancel }
-typedef OnExtracting = ExtractOperation Function(
+enum ZipFileOperation { includeItem, skipItem, cancel }
+typedef OnExtracting = ZipFileOperation Function(
     ZipEntry zipEntry, double progress);
 
-String _extractOperationToString(ExtractOperation extractOperation) {
+typedef OnZipping = ZipFileOperation Function(
+    String filePath, bool isDirectory, double progress);
+
+String _progressOperationToString(ZipFileOperation extractOperation) {
   switch (extractOperation) {
-    case ExtractOperation.skip:
+    case ZipFileOperation.skipItem:
       return "skip";
-    case ExtractOperation.cancel:
+    case ZipFileOperation.cancel:
       return "cancel";
     default:
-      return "extract";
+      return "include";
   }
 }
 
@@ -35,17 +38,42 @@ class ZipFile {
   ///
   /// By default zip all subdirectories recursively. Set [recurseSubDirs]
   /// to false to disable recursive zipping.
+  ///
+  /// Optional callback function [onZipping] is called before zipping a file
+  /// or a directory. [onZipping] must return one of the following values:
+  /// [ZipFileOperation.includeItem] - include this file/directory in zip
+  /// [ZipFileOperation.skipItem] - exclude this file or directory from the zip
+  /// [ZipFileOperation.cancel] - cancel the operation
   static Future<void> createFromDirectory(
       {required Directory sourceDir,
       required File zipFile,
       bool includeBaseDirectory = false,
-      bool recurseSubDirs = true}) async {
-    await _channel.invokeMethod<void>('zipDirectory', <String, dynamic>{
-      'sourceDir': sourceDir.path,
-      'zipFile': zipFile.path,
-      'recurseSubDirs': recurseSubDirs,
-      'includeBaseDirectory': includeBaseDirectory
-    });
+      bool recurseSubDirs = true,
+      OnZipping? onZipping}) async {
+    final reportProgress = onZipping != null;
+    if (reportProgress) {
+      if (!_isMethodCallHandlerSet) {
+        _channel.setMethodCallHandler(_channelMethodCallHandler);
+        _isMethodCallHandlerSet = true;
+      }
+    }
+    final jobId = ++_jobId;
+    try {
+      if (onZipping != null) {
+        _onZippingHandlerByJobId[jobId] = onZipping;
+      }
+
+      await _channel.invokeMethod<void>('zipDirectory', <String, dynamic>{
+        'sourceDir': sourceDir.path,
+        'zipFile': zipFile.path,
+        'recurseSubDirs': recurseSubDirs,
+        'includeBaseDirectory': includeBaseDirectory,
+        'reportProgress': reportProgress,
+        'jobId': jobId,
+      });
+    } finally {
+      _onZippingHandlerByJobId.remove(jobId);
+    }
   }
 
   /// Compress given list of [files] and save the resulted archive to [zipFile].
@@ -88,6 +116,11 @@ class ZipFile {
 
   /// Extract [zipFile] to a given [destinationDir]. Optional callback function
   /// [onExtracting] is called before extracting a zip entry.
+  ///
+  /// [onExtracting] must return one of the following values:
+  /// [ZipFileOperation.includeItem] - extract this file/directory
+  /// [ZipFileOperation.skipItem] - do not extract this file/directory
+  /// [ZipFileOperation.cancel] - cancel the operation
   static Future<void> extractToDirectory(
       {required File zipFile,
       required Directory destinationDir,
@@ -119,19 +152,27 @@ class ZipFile {
   static bool _isMethodCallHandlerSet = false;
   static int _jobId = 0;
   static final _onExtractingHandlerByJobId = <int, OnExtracting>{};
+  static final _onZippingHandlerByJobId = <int, OnZipping>{};
 
   static Future<dynamic> _channelMethodCallHandler(MethodCall call) {
     if (call.method == 'progress') {
       final args = Map<String, dynamic>.from(call.arguments as Map);
       final jobId = args["jobId"] as int? ?? 0;
+      final zipEntry = ZipEntry.fromMap(args);
+      final progress = args["progress"] as double? ?? 0;
       final onExtractHandler = _onExtractingHandlerByJobId[jobId];
       if (onExtractHandler != null) {
-        final zipEntry = ZipEntry.fromMap(args);
-        final progress = args["progress"] as double? ?? 0;
         final result = onExtractHandler(zipEntry, progress);
-        return Future<String>.value(_extractOperationToString(result));
+        return Future<String>.value(_progressOperationToString(result));
       } else {
-        return Future<void>.value();
+        final onZippingHandler = _onZippingHandlerByJobId[jobId];
+        if (onZippingHandler != null) {
+          final result =
+              onZippingHandler(zipEntry.name, zipEntry.isDirectory, progress);
+          return Future<String>.value(_progressOperationToString(result));
+        } else {
+          return Future<void>.value();
+        }
       }
     }
     return Future<void>.value();
