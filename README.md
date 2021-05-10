@@ -10,7 +10,8 @@ Create and extract ZIP archive files. Uses Android/iOS/macOS platform APIs for h
 - Zip all files in a directory (optionally recursively).
 - Zip a given list of files.
 - Unzip an archive file to a given directory.
-- Progress reporting while extracting an archive. Get details of zip entries being extracted and allow skip extracting a zip entry.
+- Progress reporting.
+- Extract and zip files selectively (allows excluding files).
 
 ## Examples
 
@@ -75,7 +76,7 @@ Create and extract ZIP archive files. Uses Android/iOS/macOS platform APIs for h
           print('compressedSize: ${zipEntry.compressedSize}');
           print('compressionMethod: ${zipEntry.compressionMethod}');
           print('crc: ${zipEntry.crc}');
-          return ExtractOperation.extract;
+          return ZipFileOperation.includeItem;
         });
   } catch (e) {
     print(e);

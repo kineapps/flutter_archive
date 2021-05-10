@@ -1,3 +1,10 @@
+## 4.0.0
+
+- ZipFile.createFromDirectory: added a new parameter onZipping for progress reporting and to allow filtering files to be included in the zip (#30)
+- BREAKING CHANGE: replaced enum ExtractOperation with ZipFileOperation
+- [iOS] fixed: recurseSubDirs parameter in ZipFile.createFromDirectory was ignored
+- [Android] Updated compileSdkVersion and targetSdkVersion to 30
+
 ## 3.0.0
 
 - null safety
