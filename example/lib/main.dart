@@ -94,7 +94,7 @@ class _MyAppState extends State<MyApp> {
                 print('progress: ${progress.toStringAsFixed(1)}%');
                 print('name: $fileName');
                 print('isDirectory: $isDirectory');
-                return ProgressOperation.includeItem;
+                return ZipFileOperation.includeItem;
               }
             : null,
       );
@@ -166,7 +166,7 @@ class _MyAppState extends State<MyApp> {
                   print('compressedSize: ${zipEntry.compressedSize}');
                   print('compressionMethod: ${zipEntry.compressionMethod}');
                   print('crc: ${zipEntry.crc}');
-                  return ProgressOperation.includeItem;
+                  return ZipFileOperation.includeItem;
                 }
               : null));
 
@@ -186,7 +186,7 @@ class _MyAppState extends State<MyApp> {
                   print('compressedSize: ${zipEntry.compressedSize}');
                   print('compressionMethod: ${zipEntry.compressionMethod}');
                   print('crc: ${zipEntry.crc}');
-                  return ProgressOperation.includeItem;
+                  return ZipFileOperation.includeItem;
                 }
               : null));
 
