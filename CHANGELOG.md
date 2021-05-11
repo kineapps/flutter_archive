@@ -1,3 +1,7 @@
+## 4.0.1
+
+[iOS] ZipFile.createFromDirectory: fixed issues with file paths
+
 ## 4.0.0
 
 - ZipFile.createFromDirectory: added a new parameter onZipping for progress reporting and to allow filtering files to be included in the zip (#30)
