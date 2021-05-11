@@ -73,16 +73,14 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
 
             DispatchQueue.global(qos: .userInitiated).async {
                 let fileManager = FileManager()
-                var sourceURL = URL(fileURLWithPath: sourceDir)
+                let sourceURL = URL(fileURLWithPath: sourceDir)
                 let destinationURL = URL(fileURLWithPath: zipFile)
                 do {
-                    if reportProgress || recurseSubDirs {
-                        if includeBaseDirectory {
-                            sourceURL = sourceURL.deletingLastPathComponent()
-                        }
+                    if reportProgress || !recurseSubDirs {
                         try self.zipDirectory(at: sourceURL,
                                               to: destinationURL,
                                               recurseSubDirs: recurseSubDirs,
+                                              includeBaseDirectory: includeBaseDirectory,
                                               reportProgress: reportProgress,
                                               jobId: jobId)
                     } else {
@@ -224,6 +222,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
     private func zipDirectory(at sourceURL: URL,
                               to zipFileURL: URL,
                               recurseSubDirs: Bool,
+                              includeBaseDirectory: Bool,
                               reportProgress: Bool,
                               jobId: Int?) throws
     {
@@ -238,7 +237,9 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
             for case let fileURL as URL in enumerator {
                 let fileAttributes = try fileURL.resourceValues(forKeys: [.isRegularFileKey])
                 if fileAttributes.isRegularFile! {
-                    files.append(fileURL)
+                    let url = fileURL.standardizedFileURL
+                    log("Found file: " + url.path)
+                    files.append(url)
                 }
             }
         }
@@ -251,6 +252,9 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
 
         let dispatchGroup = DispatchGroup()
 
+        let baseDirUrl = URL(fileURLWithPath: includeBaseDirectory ?
+            sourceURL.deletingLastPathComponent().path : sourceURL.path).standardizedFileURL
+        log("baseDirUrl: " + baseDirUrl.path)
         for item in files {
             if reportProgress {
                 log("File: " + item.path)
@@ -297,9 +301,9 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                 }
             }
 
-            let relativePath = item.relativePath(from: sourceURL)
-            log("Adding: " + relativePath!)
-            try archive?.addEntry(with: relativePath!, relativeTo: sourceURL, compressionMethod: .deflate)
+            let relativePath = item.path.replacingFirstOccurrence(of: baseDirUrl.path + "/", with: "")
+            log("Adding: " + relativePath)
+            try archive?.addEntry(with: relativePath, relativeTo: baseDirUrl, compressionMethod: .deflate)
         }
     }
 
@@ -423,28 +427,11 @@ extension URL {
     var isDirectory: Bool {
         return (try? resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true
     }
+}
 
-    func relativePath(from base: URL) -> String? {
-        // Ensure that both URLs represent files:
-        guard isFileURL, base.isFileURL else {
-            return nil
-        }
-
-        // Remove/replace "." and "..", make paths absolute
-        let destComponents = standardized.pathComponents
-        let baseComponents = base.standardized.pathComponents
-
-        // Find number of common path components
-        var i = 0
-        while i < destComponents.count, i < baseComponents.count,
-              destComponents[i] == baseComponents[i]
-        {
-            i += 1
-        }
-
-        // Build relative path
-        var relComponents = Array(repeating: "..", count: baseComponents.count - i)
-        relComponents.append(contentsOf: destComponents[i...])
-        return relComponents.joined(separator: "/")
+extension String {
+    func replacingFirstOccurrence(of target: String, with replacement: String) -> String {
+        guard let range = self.range(of: target) else { return self }
+        return replacingCharacters(in: range, with: replacement)
     }
 }
