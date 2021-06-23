@@ -253,7 +253,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
         let dispatchGroup = DispatchGroup()
 
         let baseDirUrl = URL(fileURLWithPath: includeBaseDirectory ?
-            sourceURL.deletingLastPathComponent().path : sourceURL.path).standardizedFileURL
+                                sourceURL.deletingLastPathComponent().path : sourceURL.path).standardizedFileURL
         log("baseDirUrl: " + baseDirUrl.path)
         for item in files {
             if reportProgress {
@@ -280,7 +280,16 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                             self.log("not implemented")
                             extractOperation = ZipFileOperation.includeItem
                         } else {
-                            extractOperation = ZipFileOperation(rawValue: result as! String)
+                            switch (result as! String) {
+                            case "skip":
+                                extractOperation = ZipFileOperation.skipItem
+                            case "cancel":
+                                extractOperation = ZipFileOperation.cancel
+                            case "include":
+                                extractOperation = ZipFileOperation.includeItem
+                            default:
+                                extractOperation = nil
+                            }
                             self.log("result: \(String(describing: extractOperation))")
                         }
                         dispatchGroup.leave()
@@ -361,7 +370,16 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                         self.log("not implemented")
                         extractOperation = ZipFileOperation.includeItem
                     } else {
-                        extractOperation = ZipFileOperation(rawValue: result as! String)
+                        switch (result as! String) {
+                        case "skip":
+                            extractOperation = ZipFileOperation.skipItem
+                        case "cancel":
+                            extractOperation = ZipFileOperation.cancel
+                        case "include":
+                            extractOperation = ZipFileOperation.includeItem
+                        default:
+                            extractOperation = nil
+                        }
                         self.log("result: \(String(describing: extractOperation))")
                     }
                     dispatchGroup.leave()
