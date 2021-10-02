@@ -380,7 +380,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                         "cancel" -> {
                             deferred.complete(ZipFileOperation.CANCEL)
                         }
-                        "skip" -> {
+                        "skipItem" -> {
                             deferred.complete(ZipFileOperation.SKIP_ITEM)
                         }
                         else -> {

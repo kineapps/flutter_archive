@@ -18,11 +18,11 @@ typedef OnZipping = ZipFileOperation Function(
 String _progressOperationToString(ZipFileOperation extractOperation) {
   switch (extractOperation) {
     case ZipFileOperation.skipItem:
-      return "skip";
+      return "skipItem";
     case ZipFileOperation.cancel:
       return "cancel";
     default:
-      return "include";
+      return "includeItem";
   }
 }
 
