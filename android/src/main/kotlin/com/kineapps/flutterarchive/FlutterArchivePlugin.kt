@@ -12,7 +12,6 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
-import io.flutter.plugin.common.PluginRegistry.Registrar
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -41,13 +40,6 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
 
     companion object {
         private const val LOG_TAG = "FlutterArchivePlugin"
-
-        @JvmStatic
-        fun registerWith(registrar: Registrar) {
-            Log.d(LOG_TAG, "registerWith")
-            val plugin = FlutterArchivePlugin()
-            plugin.doOnAttachedToEngine(registrar.messenger())
-        }
     }
 
     override fun onAttachedToEngine(binding: FlutterPlugin.FlutterPluginBinding) {
@@ -355,7 +347,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                     }
 
                     Log.d(LOG_TAG, "Writing entry to file: " + outputFile.path)
-                    zipFile.getInputStream(ze).use { zis ->
+                        zipFile.getInputStream(ze).use { zis ->
                         outputFile.outputStream().use { outputStream -> zis.copyTo(outputStream) }
                     }
                 }
