@@ -347,8 +347,11 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                     }
 
                     Log.d(LOG_TAG, "Writing entry to file: " + outputFile.path)
+                    withContext(Dispatchers.IO) {
                         zipFile.getInputStream(ze).use { zis ->
-                        outputFile.outputStream().use { outputStream -> zis.copyTo(outputStream) }
+                            outputFile.outputStream()
+                                .use { outputStream -> zis.copyTo(outputStream) }
+                        }
                     }
                 }
             }
