@@ -1,3 +1,14 @@
+## 4.1.0
+
+- fixed: skipping file in ZipFile.extractToDirectory did not work
+- [Android] updated to Kotlin 1.5.30
+- [Android] upgraded gradle
+- [Android] jcenter => mavenCentral
+- [Android] set compileSdkVersion to 31
+- [Android] Removed V1 embedding
+- [Android] Fixed warning "inappropriate blocking method call"
+- [iOS] updated podspec (added s.swift_version etc.)
+
 ## 4.0.1
 
 [iOS] ZipFile.createFromDirectory: fixed issues with file paths
