@@ -205,9 +205,9 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                     val progress: Double =
                             handledFilesCount.toDouble() / totalFilesCount.toDouble() * 100.0
 
-                    Log.e(LOG_TAG, "Waiting reportProgress...")
+                    Log.d(LOG_TAG, "Waiting reportProgress...")
                     val zipFileOperation = reportProgress(jobId, entry, progress)
-                    Log.e(LOG_TAG, "...reportProgress: $zipFileOperation")
+                    Log.d(LOG_TAG, "...reportProgress: $zipFileOperation")
 
                     if (zipFileOperation == ZipFileOperation.SKIP_ITEM) {
                         continue
@@ -244,9 +244,9 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                             val progress: Double =
                                     handledFilesCount.toDouble() / totalFilesCount.toDouble() * 100.0
 
-                            Log.e(LOG_TAG, "Waiting reportProgress...")
+                            Log.d(LOG_TAG, "Waiting reportProgress...")
                             val zipFileOperation = reportProgress(jobId, entry, progress)
-                            Log.e(LOG_TAG, "...reportProgress: $zipFileOperation")
+                            Log.d(LOG_TAG, "...reportProgress: $zipFileOperation")
 
                             when (zipFileOperation) {
                                 ZipFileOperation.INCLUDE_ITEM -> {
@@ -324,9 +324,9 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                     // report progress
                     val progress: Double = currentEntryIndex++ / (entriesCount - 1) * 100
 
-                    Log.e(LOG_TAG, "Waiting reportProgress...")
+                    Log.d(LOG_TAG, "Waiting reportProgress...")
                     val zipFileOperation = reportProgress(jobId, ze, progress)
-                    Log.e(LOG_TAG, "...reportProgress: $zipFileOperation")
+                    Log.d(LOG_TAG, "...reportProgress: $zipFileOperation")
 
                     if (zipFileOperation == ZipFileOperation.SKIP_ITEM) {
                         continue
