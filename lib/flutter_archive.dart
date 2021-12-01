@@ -214,3 +214,17 @@ class ZipEntry {
   final int? crc;
   final CompressionMethod? compressionMethod;
 }
+
+///
+/// Checks whether the file starts with the needed file header
+///
+Future<bool> isZipFile(File file) async {
+  // https://en.wikipedia.org/wiki/ZIP_(file_format)
+  final randomAccessFile = file.openSync(mode: FileMode.read);
+  final bytes = await randomAccessFile.read(4);
+  return bytes.length > 3 &&
+      bytes[0] == 0x50 &&
+      bytes[1] == 0x4B &&
+      bytes[2] == 0x03 &&
+      bytes[3] == 0x04;
+}
