@@ -1,3 +1,7 @@
+## 4.1.1
+
+- Fixed #43
+
 ## 4.1.0
 
 - fixed: skipping file in ZipFile.extractToDirectory did not work
