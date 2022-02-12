@@ -15,15 +15,30 @@ typedef OnExtracting = ZipFileOperation Function(
 typedef OnZipping = ZipFileOperation Function(
     String filePath, bool isDirectory, double progress);
 
-String _progressOperationToString(ZipFileOperation extractOperation) {
-  switch (extractOperation) {
-    case ZipFileOperation.skipItem:
-      return "skipItem";
-    case ZipFileOperation.cancel:
-      return "cancel";
-    default:
-      return "includeItem";
-  }
+/// Charsets for [ZipFile.extractToDirectory] (Android only).
+/// https://developer.android.com/reference/java/nio/charset/StandardCharsets
+enum Charsets {
+  // ISO Latin Alphabet No.
+  ISO_8859_1,
+
+  // Seven-bit ASCII, a.k.a.
+  US_ASCII,
+
+  // Sixteen-bit UCS Transformation Format, byte order identified by an
+  // optional byte-order mark
+  UTF_16,
+
+  // Sixteen-bit UCS Transformation Format, big-endian byte order
+  UTF_16BE,
+
+  // Sixteen-bit UCS Transformation Format, little-endian byte order
+  UTF_16LE,
+
+  // Eight-bit UCS Transformation Format
+  UTF_8,
+
+  // https://en.wikipedia.org/wiki/Code_page_437
+  CP437,
 }
 
 /// Utility class for creating and extracting zip archive files.
@@ -121,10 +136,18 @@ class ZipFile {
   /// [ZipFileOperation.includeItem] - extract this file/directory
   /// [ZipFileOperation.skipItem] - do not extract this file/directory
   /// [ZipFileOperation.cancel] - cancel the operation
-  static Future<void> extractToDirectory(
-      {required File zipFile,
-      required Directory destinationDir,
-      OnExtracting? onExtracting}) async {
+  ///
+  /// In Android (API level >= 24) you can also specify the charset
+  /// [zipFileCharset] to be used to decode the ZIP entry names and comments.
+  /// The enum [Charsets] defines the most common values
+  /// (use e.g. [Charsets.UTF_8.name]).
+  /// More information: https://developer.android.com/reference/java/util/zip/ZipFile#ZipFile(java.lang.String,%20java.nio.charset.Charset)
+  static Future<void> extractToDirectory({
+    required File zipFile,
+    required Directory destinationDir,
+    OnExtracting? onExtracting,
+    String? zipFileCharset,
+  }) async {
     final reportProgress = onExtracting != null;
     if (reportProgress) {
       if (!_isMethodCallHandlerSet) {
@@ -140,6 +163,7 @@ class ZipFile {
 
       await _channel.invokeMethod<void>('unzip', <String, dynamic>{
         'zipFile': zipFile.path,
+        'zipFileCharset': zipFileCharset,
         'destinationDir': destinationDir.path,
         'reportProgress': reportProgress,
         'jobId': jobId,
@@ -163,13 +187,13 @@ class ZipFile {
       final onExtractHandler = _onExtractingHandlerByJobId[jobId];
       if (onExtractHandler != null) {
         final result = onExtractHandler(zipEntry, progress);
-        return Future<String>.value(_progressOperationToString(result));
+        return Future<String>.value(result.name);
       } else {
         final onZippingHandler = _onZippingHandlerByJobId[jobId];
         if (onZippingHandler != null) {
           final result =
               onZippingHandler(zipEntry.name, zipEntry.isDirectory, progress);
-          return Future<String>.value(_progressOperationToString(result));
+          return Future<String>.value(result.name);
         } else {
           return Future<void>.value();
         }
@@ -182,14 +206,15 @@ class ZipFile {
 enum CompressionMethod { none, deflated }
 
 class ZipEntry {
-  const ZipEntry(
-      {required this.name,
-      required this.isDirectory,
-      this.modificationDate,
-      this.uncompressedSize,
-      this.compressedSize,
-      this.crc,
-      this.compressionMethod});
+  const ZipEntry({
+    required this.name,
+    required this.isDirectory,
+    this.modificationDate,
+    this.uncompressedSize,
+    this.compressedSize,
+    this.crc,
+    this.compressionMethod,
+  });
 
   factory ZipEntry.fromMap(Map<String, dynamic> map) {
     return ZipEntry(

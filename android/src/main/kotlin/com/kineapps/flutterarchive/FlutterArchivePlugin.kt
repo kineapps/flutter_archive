@@ -1,10 +1,11 @@
-// Copyright (c) 2020-2021 KineApps. All rights reserved.
+// Copyright (c) 2020-2022 KineApps. All rights reserved.
 //
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
 package com.kineapps.flutterarchive
 
+import android.os.Build
 import android.util.Log
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.BinaryMessenger
@@ -24,6 +25,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.charset.Charset
 import java.util.zip.ZipEntry
 import java.util.zip.ZipEntry.DEFLATED
 import java.util.zip.ZipFile
@@ -95,12 +97,20 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                         val sourceDir = call.argument<String>("sourceDir")
                         val zipFile = call.argument<String>("zipFile")
                         val recurseSubDirs = call.argument<Boolean>("recurseSubDirs") == true
-                        val includeBaseDirectory = call.argument<Boolean>("includeBaseDirectory") == true
+                        val includeBaseDirectory =
+                            call.argument<Boolean>("includeBaseDirectory") == true
                         val reportProgress = call.argument<Boolean>("reportProgress")
                         val jobId = call.argument<Int>("jobId")
 
                         withContext(Dispatchers.IO) {
-                            zip(sourceDir!!, zipFile!!, recurseSubDirs, includeBaseDirectory, reportProgress == true, jobId!!)
+                            zip(
+                                sourceDirPath = sourceDir!!,
+                                zipFilePath = zipFile!!,
+                                recurseSubDirs = recurseSubDirs,
+                                includeBaseDirectory = includeBaseDirectory,
+                                reportProgress = reportProgress == true,
+                                jobId = jobId!!
+                            )
                         }
                         result.success(true)
                     } catch (e: Exception) {
@@ -115,7 +125,8 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                         val sourceDir = call.argument<String>("sourceDir")
                         val files = call.argument<List<String>>("files")
                         val zipFile = call.argument<String>("zipFile")
-                        val includeBaseDirectory = call.argument<Boolean>("includeBaseDirectory") == true
+                        val includeBaseDirectory =
+                            call.argument<Boolean>("includeBaseDirectory") == true
 
                         withContext(Dispatchers.IO) {
                             zipFiles(sourceDir!!, files!!, zipFile!!, includeBaseDirectory)
@@ -131,13 +142,22 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                 uiScope.launch {
                     try {
                         val zipFile = call.argument<String>("zipFile")
+                        val zipFileCharset = call.argument<String>("zipFileCharset")
                         val destinationDir = call.argument<String>("destinationDir")
                         val reportProgress = call.argument<Boolean>("reportProgress")
                         val jobId = call.argument<Int>("jobId")
 
+                        val charset = zipFileCharset?.let { Charset.forName(zipFileCharset) }
+
                         Log.d(LOG_TAG, "onMethodCall / unzip...")
                         withContext(Dispatchers.IO) {
-                            unzip(zipFile!!, destinationDir!!, reportProgress == true, jobId!!)
+                            unzip(
+                                zipFilePath = zipFile!!,
+                                zipFileCharSet = charset,
+                                destinationDirPath = destinationDir!!,
+                                reportProgress = reportProgress == true,
+                                jobId = jobId!!
+                            )
                         }
                         Log.d(LOG_TAG, "...onMethodCall / unzip")
                         result.success(true)
@@ -152,16 +172,40 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
     }
 
     @Throws(IOException::class)
-    private suspend fun zip(sourceDirPath: String, zipFilePath: String, recurseSubDirs: Boolean, includeBaseDirectory: Boolean, reportProgress: Boolean, jobId: Int) {
-        Log.i("zip", "sourceDirPath: $sourceDirPath, zipFilePath: $zipFilePath, recurseSubDirs: $recurseSubDirs, includeBaseDirectory: $includeBaseDirectory")
+    private suspend fun zip(
+        sourceDirPath: String,
+        zipFilePath: String,
+        recurseSubDirs: Boolean,
+        includeBaseDirectory: Boolean,
+        reportProgress: Boolean,
+        jobId: Int
+    ) {
+        Log.i(
+            "zip",
+            "sourceDirPath: $sourceDirPath, zipFilePath: $zipFilePath, recurseSubDirs: $recurseSubDirs, includeBaseDirectory: $includeBaseDirectory"
+        )
 
-        val rootDirectory = if (includeBaseDirectory) File(sourceDirPath).parentFile else File(sourceDirPath)
+        val rootDirectory =
+            if (includeBaseDirectory) File(sourceDirPath).parentFile else File(sourceDirPath)
 
         val totalFileCount = if (reportProgress) getFilesCount(rootDirectory, recurseSubDirs) else 0
 
         withContext(Dispatchers.IO) {
-            ZipOutputStream(BufferedOutputStream(FileOutputStream(zipFilePath))).use { zipOutputStream ->
-                addFilesInDirectoryToZip(zipOutputStream, rootDirectory, sourceDirPath, recurseSubDirs, reportProgress, jobId, totalFileCount, 0)
+            ZipOutputStream(
+                BufferedOutputStream(
+                    FileOutputStream(zipFilePath)
+                )
+            ).use { zipOutputStream ->
+                addFilesInDirectoryToZip(
+                    zipOutputStream = zipOutputStream,
+                    rootDirectory = rootDirectory,
+                    directoryPath = sourceDirPath,
+                    recurseSubDirs = recurseSubDirs,
+                    reportProgress = reportProgress,
+                    jobId = jobId,
+                    totalFilesCount = totalFileCount,
+                    totalHandledFilesCount = 0
+                )
             }
         }
     }
@@ -172,14 +216,15 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
      * @return Updated total number of handled files
      */
     private suspend fun addFilesInDirectoryToZip(
-            zipOutputStream: ZipOutputStream,
-            rootDirectory: File,
-            directoryPath: String,
-            recurseSubDirs: Boolean,
-            reportProgress: Boolean,
-            jobId: Int,
-            totalFilesCount: Int,
-            totalHandledFilesCount: Int): Int {
+        zipOutputStream: ZipOutputStream,
+        rootDirectory: File,
+        directoryPath: String,
+        recurseSubDirs: Boolean,
+        reportProgress: Boolean,
+        jobId: Int,
+        totalFilesCount: Int,
+        totalHandledFilesCount: Int
+    ): Int {
         val directory = File(directoryPath)
 
         val files = directory.listFiles() ?: arrayOf<File>()
@@ -203,7 +248,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                 if (reportProgress) {
                     // report progress
                     val progress: Double =
-                            handledFilesCount.toDouble() / totalFilesCount.toDouble() * 100.0
+                        handledFilesCount.toDouble() / totalFilesCount.toDouble() * 100.0
 
                     Log.d(LOG_TAG, "Waiting reportProgress...")
                     val zipFileOperation = reportProgress(jobId, entry, progress)
@@ -222,14 +267,15 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
 
                 // zip files and subdirectories in this directory
                 handledFilesCount = addFilesInDirectoryToZip(
-                        zipOutputStream,
-                        rootDirectory,
-                        path,
-                        true,
-                        reportProgress,
-                        jobId,
-                        totalFilesCount,
-                        handledFilesCount)
+                    zipOutputStream = zipOutputStream,
+                    rootDirectory = rootDirectory,
+                    directoryPath = path,
+                    recurseSubDirs = true,
+                    reportProgress = reportProgress,
+                    jobId = jobId,
+                    totalFilesCount = totalFilesCount,
+                    totalHandledFilesCount = handledFilesCount
+                )
             } else {
                 Log.i("zip", "Adding file: $relativePath")
                 ++handledFilesCount
@@ -242,7 +288,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                         if (reportProgress) {
                             // report progress
                             val progress: Double =
-                                    handledFilesCount.toDouble() / totalFilesCount.toDouble() * 100.0
+                                handledFilesCount.toDouble() / totalFilesCount.toDouble() * 100.0
 
                             Log.d(LOG_TAG, "Waiting reportProgress...")
                             val zipFileOperation = reportProgress(jobId, entry, progress)
@@ -272,13 +318,28 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
     }
 
     @Throws(IOException::class)
-    private fun zipFiles(sourceDirPath: String, relativeFilePaths: List<String>, zipFilePath: String, includeBaseDirectory: Boolean) {
-        Log.i("zip", "sourceDirPath: $sourceDirPath, zipFilePath: $zipFilePath, includeBaseDirectory: $includeBaseDirectory")
+    private fun zipFiles(
+        sourceDirPath: String,
+        relativeFilePaths: List<String>,
+        zipFilePath: String,
+        includeBaseDirectory: Boolean
+    ) {
+        Log.i(
+            "zip",
+            "sourceDirPath: $sourceDirPath, " +
+                    "zipFilePath: $zipFilePath, " +
+                    "includeBaseDirectory: $includeBaseDirectory"
+        )
         Log.i("zip", "Files: ${relativeFilePaths.joinToString(",")}")
 
-        val rootDirectory = if (includeBaseDirectory) File(sourceDirPath).parentFile else File(sourceDirPath)
+        val rootDirectory =
+            if (includeBaseDirectory) File(sourceDirPath).parentFile else File(sourceDirPath)
 
-        ZipOutputStream(BufferedOutputStream(FileOutputStream(zipFilePath))).use { zipOutputStream ->
+        ZipOutputStream(
+            BufferedOutputStream(
+                FileOutputStream(zipFilePath)
+            )
+        ).use { zipOutputStream ->
             for (relativeFilePath in relativeFilePaths) {
                 val file = rootDirectory.resolve(relativeFilePath)
                 val cleanedRelativeFilePath = file.relativeTo(rootDirectory).path
@@ -295,19 +356,39 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
     }
 
     @Throws(IOException::class)
-    private suspend fun unzip(zipFilePath: String, destinationDirPath: String, reportProgress: Boolean, jobId: Int) {
+    private suspend fun unzip(
+        zipFilePath: String,
+        zipFileCharSet: Charset?,
+        destinationDirPath: String,
+        reportProgress: Boolean,
+        jobId: Int
+    ) {
         val destinationDir = File(destinationDirPath)
 
         Log.d(LOG_TAG, "destinationDir.path: ${destinationDir.path}")
         Log.d(LOG_TAG, "destinationDir.canonicalPath: ${destinationDir.canonicalPath}")
         Log.d(LOG_TAG, "destinationDir.absolutePath: ${destinationDir.absolutePath}")
 
-        ZipFileEx(zipFilePath).use { zipFile ->
+        // specify charset if unzip fails to MALFORMED exception, see for example
+        // https://stackoverflow.com/questions/41908761/unzipping-a-file-with-special-characters-in-filenames-from-api24-upward
+        val zipFile: ZipFile =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N &&
+                zipFileCharSet != null
+            ) {
+                ZipFile(zipFilePath, zipFileCharSet)
+            } else {
+                ZipFileEx(zipFilePath)
+            }
+
+        zipFile.use {
             val entriesCount = zipFile.size().toDouble()
             var currentEntryIndex = 0.0
             for (ze in zipFile.entries()) {
                 val filename = ze.name
-                Log.d(LOG_TAG, "zipEntry fileName=$filename, compressedSize=${ze.compressedSize}, size=${ze.size}, crc=${ze.crc}")
+                Log.d(
+                    LOG_TAG,
+                    "zipEntry fileName=$filename, compressedSize=${ze.compressedSize}, size=${ze.size}, crc=${ze.crc}"
+                )
 
                 val outputFile = File(destinationDirPath, filename)
 
@@ -358,7 +439,11 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
         }
     }
 
-    private suspend fun reportProgress(jobId: Int, zipEntry: ZipEntry, progress: Double): ZipFileOperation {
+    private suspend fun reportProgress(
+        jobId: Int,
+        zipEntry: ZipEntry,
+        progress: Double
+    ): ZipFileOperation {
         val map = zipEntryToMap(zipEntry).toMutableMap()
         map["jobId"] = jobId
         map["progress"] = progress
@@ -421,14 +506,15 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
 
     private fun zipEntryToMap(ze: ZipEntry): Map<String, Any> {
         return mapOf(
-                "name" to ze.name,
-                "isDirectory" to ze.isDirectory,
-                "comment" to ze.comment,
-                "modificationDate" to ze.time,
-                "uncompressedSize" to ze.size,
-                "compressedSize" to ze.compressedSize,
-                "crc" to ze.crc,
-                "compressionMethod" to (if (ze.method == DEFLATED) "deflated" else "none"))
+            "name" to ze.name,
+            "isDirectory" to ze.isDirectory,
+            "comment" to ze.comment,
+            "modificationDate" to ze.time,
+            "uncompressedSize" to ze.size,
+            "compressedSize" to ze.compressedSize,
+            "crc" to ze.crc,
+            "compressionMethod" to (if (ze.method == DEFLATED) "deflated" else "none")
+        )
     }
 
     // This is needed because ZipFile implements Closeable only starting from API 19 and
