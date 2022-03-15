@@ -1,3 +1,7 @@
+## 4.2.0
+
+- [Android] Fixed #25: added parameter zipFileCharset to ZipFile.extractToDirectory for defining the charset to use
+
 ## 4.1.1
 
 - Fixed #43
