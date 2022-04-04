@@ -469,7 +469,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                     }
                 }
 
-                override fun error(code: String?, msg: String?, details: Any?) {
+                override fun error(code: String, msg: String?, details: Any?) {
                     Log.e(LOG_TAG, "invokeMethod - error: $msg")
                     // ignore error and extract normally
                     deferred.complete(ZipFileOperation.INCLUDE_ITEM)
