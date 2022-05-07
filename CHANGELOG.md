@@ -1,7 +1,7 @@
 ## 5.0.0
 
-- [iOS] BRAKING CHANGE: minimum iOS version is now iOS 12.0
-- [iOS] Upgraded to ZIPFoundation 0.9.13
+- [iOS] BRAKING CHANGE: minimum iOS version is now iOS 12.0 
+- [iOS] Upgraded to ZIPFoundation 0.9.13 (thanks to daniel-possienke)
 
 ## 4.2.2
 
