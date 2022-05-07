@@ -184,16 +184,19 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
             }
             let reportProgress = args["reportProgress"] as? Bool
             let jobId = args["jobId"] as? Int
-
+            let zipFileCharset = args["zipFileCharset"] as? String
             log("zipFile: " + zipFile)
             log("destinationDir: " + destinationDir)
+            log("zipFileCharset: " + (zipFileCharset ?? ""))
+
             DispatchQueue.global(qos: .userInitiated).async {
                 let fileManager = FileManager()
                 let sourceURL = URL(fileURLWithPath: zipFile)
                 let destinationURL = URL(fileURLWithPath: destinationDir)
+                let preferredEncoding = self.charSet2Encoding(zipFileCharset: zipFileCharset) as? String.Encoding;
                 do {
                     if reportProgress == true {
-                        try self.unzipItemAndReportProgress(at: sourceURL, to: destinationURL, jobId: jobId!)
+                        try self.unzipItemAndReportProgress(at: sourceURL, to: destinationURL, jobId: jobId!, preferredEncoding: preferredEncoding)
                     } else {
                         try fileManager.createDirectory(at: destinationURL, withIntermediateDirectories: true, attributes: nil)
                         try fileManager.unzipItem(at: sourceURL, to: destinationURL)
@@ -216,6 +219,19 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
         default:
             log("not implemented")
             result(FlutterMethodNotImplemented)
+        }
+    }
+
+    private func charSet2Encoding(zipFileCharset: String?) ->String.Encoding? {
+        switch (zipFileCharset) {
+            case ("ISO_8859_1"): return String.Encoding.isoLatin1
+            case ("US_ASCII"): return String.Encoding.ascii
+            case ("UTF_16"): return String.Encoding.utf16
+            case ("UTF_16BE"): return String.Encoding.utf16BigEndian
+            case ("UTF_16LE"): return String.Encoding.utf16LittleEndian
+            case ("UTF_8"): return String.Encoding.utf8
+            case ("CP437"): return nil
+            default: return nil
         }
     }
 
@@ -258,7 +274,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
         for item in files {
             if reportProgress {
                 log("File: " + item.path)
-
+                currentEntryIndex += 1
                 let progress: Double = currentEntryIndex / totalEntriesCount * 100.0
 
                 let entryDic: [String: Any] = [
@@ -287,7 +303,6 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                     }
                 }
 
-                currentEntryIndex += 1
 
                 log("Waiting...")
                 dispatchGroup.wait()
@@ -345,7 +360,8 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
             let path = preferredEncoding == nil ? entry.path : entry.path(using: preferredEncoding!)
             let destinationEntryURL = destinationURL.appendingPathComponent(path)
 
-            var entryDic = entryToDictionary(entry: entry)
+            var entryDic = entryToDictionary(entry: entry, preferredEncoding: preferredEncoding)
+            currentEntryIndex += 1
             let progress: Double = currentEntryIndex / totalEntriesCount * 100.0
             entryDic["jobId"] = jobId
             entryDic["progress"] = progress
@@ -367,8 +383,6 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                     dispatchGroup.leave()
                 }
             }
-
-            currentEntryIndex += 1
 
             log("Waiting...")
             dispatchGroup.wait()
@@ -407,11 +421,11 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
         NSLog("\n" + message)
     }
 
-    private func entryToDictionary(entry: Entry) -> [String: Any] {
+    private func entryToDictionary(entry: Entry, preferredEncoding: String.Encoding? = nil) -> [String: Any] {
         let date = entry.fileAttributes[FileAttributeKey.modificationDate] as? Date
         let millis = Int(date?.timeIntervalSince1970 ?? 0) * 1000
         let dic: [String: Any] = [
-            "name": entry.path,
+            "name": preferredEncoding == nil ? entry.path : entry.path(using: preferredEncoding!),
             "isDirectory": entry.type == Entry.EntryType.directory,
             "modificationDate": millis,
             "uncompressedSize": entry.uncompressedSize,
