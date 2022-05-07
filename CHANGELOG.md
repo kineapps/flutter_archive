@@ -1,3 +1,8 @@
+## 4.2.1
+
+- [Android] Fixed build issue related to Result.error
+- fixed sdk constraints
+
 ## 4.2.0
 
 - [Android] Fixed #25: added parameter zipFileCharset to ZipFile.extractToDirectory for defining the charset to use
