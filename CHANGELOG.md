@@ -1,3 +1,8 @@
+## 4.2.2
+
+- [iOS] fixed: progress never 100% (thanks to Lan-tb)
+- [iOS] added charset support (thanks to Lan-tb)
+
 ## 4.2.1
 
 - [Android] Fixed build issue related to Result.error

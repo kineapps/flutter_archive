@@ -15,7 +15,7 @@ typedef OnExtracting = ZipFileOperation Function(
 typedef OnZipping = ZipFileOperation Function(
     String filePath, bool isDirectory, double progress);
 
-/// Charsets for [ZipFile.extractToDirectory] (Android only).
+/// Charsets for [ZipFile.extractToDirectory].
 /// https://developer.android.com/reference/java/nio/charset/StandardCharsets
 enum Charsets {
   // ISO Latin Alphabet No.
@@ -137,7 +137,7 @@ class ZipFile {
   /// [ZipFileOperation.skipItem] - do not extract this file/directory
   /// [ZipFileOperation.cancel] - cancel the operation
   ///
-  /// In Android (API level >= 24) you can also specify the charset
+  /// In iOS and Android (API level >= 24) you can also specify the charset
   /// [zipFileCharset] to be used to decode the ZIP entry names and comments.
   /// The enum [Charsets] defines the most common values
   /// (use e.g. [Charsets.UTF_8.name]).
