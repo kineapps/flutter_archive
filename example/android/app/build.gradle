@@ -26,6 +26,8 @@ apply plugin: 'kotlin-android'
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
+    namespace 'com.kineapps.flutter_archive_example'
+
     compileSdkVersion 33
 
     compileOptions {
@@ -48,7 +50,7 @@ android {
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.kineapps.flutter_archive_example"
-        minSdkVersion 16
+        minSdkVersion 19
         targetSdkVersion 31
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
