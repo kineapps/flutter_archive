@@ -1,3 +1,8 @@
+## 6.0.0
+- [Andfroid] Fix AGP 8.0 compile error
+- [Andfroid] Updated gradle version 7.3.1 and Kotlin version 1.7.10
+- [Andfroid] Set compileSdkVersion to 33
+
 ## 5.0.0
 
 - [iOS] BRAKING CHANGE: minimum iOS version is now iOS 12.0 
