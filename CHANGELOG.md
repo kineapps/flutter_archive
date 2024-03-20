@@ -1,3 +1,6 @@
+## 6.0.1
+- [iOS] Upgraded to ZIPFoundation 0.9.18
+
 ## 6.0.0
 - [Andfroid] Fix AGP 8.0 compile error
 - [Andfroid] Updated gradle version 7.3.1 and Kotlin version 1.7.10
