@@ -1,5 +1,8 @@
+## 6.0.2
+- [iOS] Upgraded to ZIPFoundation 0.9.19
+
 ## 6.0.1
-- [iOS] Upgraded to ZIPFoundation 0.9.18
+- [iOS] Upgraded to ZIPFoundation 0.9.18 (thanks to AliakseiT)
 
 ## 6.0.0
 - [Andfroid] Fix AGP 8.0 compile error

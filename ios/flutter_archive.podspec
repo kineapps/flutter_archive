@@ -16,7 +16,7 @@ A new flutter plugin project.
   s.source_files = 'Classes/**/*'
   s.public_header_files = 'Classes/**/*.h'
   s.dependency 'Flutter'
-  s.dependency 'ZIPFoundation', '0.9.18'
+  s.dependency 'ZIPFoundation', '0.9.19'
 
   s.platform = :ios, '12.0'
   s.ios.deployment_target = '12.0'
