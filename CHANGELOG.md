@@ -1,3 +1,6 @@
+## 6.0.3
+- [iOS] Fixed build issue #78
+
 ## 6.0.2
 - [iOS] Upgraded to ZIPFoundation 0.9.19
 
