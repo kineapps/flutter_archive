@@ -142,15 +142,15 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                 let destinationURL = URL(fileURLWithPath: zipFile)
                 do {
                     // create zip archive
-                    let archive = Archive(url: destinationURL, accessMode: .create)
+                    let archive = try Archive(url: destinationURL, accessMode: .create)
 
                     for item in files {
                         self.log("Adding: " + item)
-                        try archive?.addEntry(with: item, relativeTo: sourceURL, compressionMethod: .deflate)
+                        try archive.addEntry(with: item, relativeTo: sourceURL, compressionMethod: .deflate)
                     }
 
                     DispatchQueue.main.async {
-                        self.log("Created zip at: " + archive.debugDescription)
+                        self.log("Created zip at: " + zipFile)
                         result(true)
                     }
                 } catch {
@@ -193,7 +193,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                 let fileManager = FileManager()
                 let sourceURL = URL(fileURLWithPath: zipFile)
                 let destinationURL = URL(fileURLWithPath: destinationDir)
-                let preferredEncoding = self.charSet2Encoding(zipFileCharset: zipFileCharset) as? String.Encoding;
+                let preferredEncoding = self.charSet2Encoding(zipFileCharset: zipFileCharset)
                 do {
                     if reportProgress == true {
                         try self.unzipItemAndReportProgress(at: sourceURL, to: destinationURL, jobId: jobId!, preferredEncoding: preferredEncoding)
@@ -261,7 +261,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
         }
 
         // create zip archive
-        let archive = Archive(url: zipFileURL, accessMode: .create)
+        let archive = try Archive(url: zipFileURL, accessMode: .create)
 
         let totalEntriesCount = Double(files.count)
         var currentEntryIndex: Double = 0
@@ -318,7 +318,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
 
             let relativePath = item.path.replacingFirstOccurrence(of: baseDirUrl.path + "/", with: "")
             log("Adding: " + relativePath)
-            try archive?.addEntry(with: relativePath, relativeTo: baseDirUrl, compressionMethod: .deflate)
+            try archive.addEntry(with: relativePath, relativeTo: baseDirUrl, compressionMethod: .deflate)
         }
     }
 
@@ -338,9 +338,8 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
         guard itemExists(at: sourceURL) else {
             throw CocoaError(.fileReadNoSuchFile, userInfo: [NSFilePathErrorKey: sourceURL.path])
         }
-        guard let archive = Archive(url: sourceURL, accessMode: .read, preferredEncoding: preferredEncoding) else {
-            throw Archive.ArchiveError.unreadableArchive
-        }
+        let archive = try Archive(url: sourceURL, accessMode: .read, pathEncoding: preferredEncoding)
+        
         // Defer extraction of symlinks until all files & directories have been created.
         // This is necessary because we can't create links to files that haven't been created yet.
         let sortedEntries = archive.sorted { (left, right) -> Bool in
