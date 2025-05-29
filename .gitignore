@@ -51,6 +51,7 @@ gradlew.bat
 gradle-wrapper.jar
 .flutter-plugins-dependencies
 *.iml
+**/ios/Flutter/ephemeral/
 
 GeneratedPluginRegistrant.h
 GeneratedPluginRegistrant.m
