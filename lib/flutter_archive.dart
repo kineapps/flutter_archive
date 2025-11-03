@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 
 enum ZipFileOperation { includeItem, skipItem, cancel }
+
 typedef OnExtracting = ZipFileOperation Function(
     ZipEntry zipEntry, double progress);
 
