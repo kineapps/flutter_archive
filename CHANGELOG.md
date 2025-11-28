@@ -1,3 +1,6 @@
+## 6.0.4
+- [Android] Updated compileSdkVersion to 36, Gradle to 8.14 and Java/Kotlin compatibility to version 17
+
 ## 6.0.3
 - [iOS] Fixed build issue #78
 
