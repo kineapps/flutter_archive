@@ -14,10 +14,15 @@ A new flutter plugin project.
   s.author           = { 'Your Company' => 'email@example.com' }
   s.source           = { :path => '.' }
   s.source_files     = 'Classes/**/*'
+  s.public_header_files = 'Classes/**/*.h'
   s.dependency 'FlutterMacOS'
   s.dependency 'ZIPFoundation', '0.9.19'
+  s.dependency 'SSZipArchive', '~> 2.4'
 
   s.platform = :osx, '10.11'
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES' }
+  s.pod_target_xcconfig = { 
+    'DEFINES_MODULE' => 'YES'
+  }
+  s.requires_arc = true
   s.swift_version = '5.0'
 end

@@ -55,6 +55,9 @@ class ZipFile {
   /// By default zip all subdirectories recursively. Set [recurseSubDirs]
   /// to false to disable recursive zipping.
   ///
+  /// Optional [password] parameter can be provided to create a password-protected
+  /// zip file. If null, the zip file will be created without password protection.
+  ///
   /// Optional callback function [onZipping] is called before zipping a file
   /// or a directory. [onZipping] must return one of the following values:
   /// [ZipFileOperation.includeItem] - include this file/directory in zip
@@ -65,6 +68,7 @@ class ZipFile {
       required File zipFile,
       bool includeBaseDirectory = false,
       bool recurseSubDirs = true,
+      String? password,
       OnZipping? onZipping}) async {
     final reportProgress = onZipping != null;
     if (reportProgress) {
@@ -86,6 +90,7 @@ class ZipFile {
         'includeBaseDirectory': includeBaseDirectory,
         'reportProgress': reportProgress,
         'jobId': jobId,
+        'password': password,
       });
     } finally {
       _onZippingHandlerByJobId.remove(jobId);
@@ -99,11 +104,15 @@ class ZipFile {
   /// Set [includeBaseDirectory] to true to include the directory name from
   /// [sourceDir] at the root of the archive. Set [includeBaseDirectory] to
   /// false to include only the contents of the [sourceDir].
+  ///
+  /// Optional [password] parameter can be provided to create a password-protected
+  /// zip file. If null, the zip file will be created without password protection.
   static Future<void> createFromFiles({
     required Directory sourceDir,
     required List<File> files,
     required File zipFile,
     bool includeBaseDirectory = false,
+    String? password,
   }) async {
     var sourceDirPath =
         includeBaseDirectory ? sourceDir.parent.path : sourceDir.path;
@@ -126,7 +135,8 @@ class ZipFile {
       'sourceDir': sourceDir.path,
       'files': relativeFilePaths,
       'zipFile': zipFile.path,
-      'includeBaseDirectory': includeBaseDirectory
+      'includeBaseDirectory': includeBaseDirectory,
+      'password': password,
     });
   }
 
