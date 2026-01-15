@@ -30,6 +30,9 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipEntry.DEFLATED
 import java.util.zip.ZipFile
 import java.util.zip.ZipOutputStream
+import net.lingala.zip4j.ZipFile as Zip4jFile
+import net.lingala.zip4j.model.ZipParameters
+import net.lingala.zip4j.model.enums.EncryptionMethod
 
 enum class ZipFileOperation { INCLUDE_ITEM, SKIP_ITEM, CANCEL }
 
@@ -101,6 +104,7 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                             call.argument<Boolean>("includeBaseDirectory") == true
                         val reportProgress = call.argument<Boolean>("reportProgress")
                         val jobId = call.argument<Int>("jobId")
+                        val password = call.argument<String>("password")
 
                         withContext(Dispatchers.IO) {
                             zip(
@@ -109,7 +113,8 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                                 recurseSubDirs = recurseSubDirs,
                                 includeBaseDirectory = includeBaseDirectory,
                                 reportProgress = reportProgress == true,
-                                jobId = jobId!!
+                                jobId = jobId!!,
+                                password = password
                             )
                         }
                         result.success(true)
@@ -127,9 +132,10 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                         val zipFile = call.argument<String>("zipFile")
                         val includeBaseDirectory =
                             call.argument<Boolean>("includeBaseDirectory") == true
+                        val password = call.argument<String>("password")
 
                         withContext(Dispatchers.IO) {
-                            zipFiles(sourceDir!!, files!!, zipFile!!, includeBaseDirectory)
+                            zipFiles(sourceDir!!, files!!, zipFile!!, includeBaseDirectory, password)
                         }
                         result.success(true)
                     } catch (e: Exception) {
@@ -178,26 +184,29 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
         recurseSubDirs: Boolean,
         includeBaseDirectory: Boolean,
         reportProgress: Boolean,
-        jobId: Int
+        jobId: Int,
+        password: String?
     ) {
         Log.i(
             "zip",
-            "sourceDirPath: $sourceDirPath, zipFilePath: $zipFilePath, recurseSubDirs: $recurseSubDirs, includeBaseDirectory: $includeBaseDirectory"
+            "sourceDirPath: $sourceDirPath, zipFilePath: $zipFilePath, recurseSubDirs: $recurseSubDirs, includeBaseDirectory: $includeBaseDirectory, password: ${if (password != null) "***" else "null"}"
         )
 
         val rootDirectory =
             if (includeBaseDirectory) File(sourceDirPath).parentFile else File(sourceDirPath)
 
-        val totalFileCount = if (reportProgress) getFilesCount(rootDirectory, recurseSubDirs) else 0
+        if (password != null) {
+            // Use Zip4j for password-protected zip
+            val totalFileCount = if (reportProgress) getFilesCount(rootDirectory, recurseSubDirs) else 0
+            withContext(Dispatchers.IO) {
+                val zip4jFile = Zip4jFile(zipFilePath, password.toCharArray())
+                val zipParameters = ZipParameters()
+                zipParameters.isEncryptFiles = true
+                zipParameters.encryptionMethod = EncryptionMethod.ZIP_STANDARD
 
-        withContext(Dispatchers.IO) {
-            ZipOutputStream(
-                BufferedOutputStream(
-                    FileOutputStream(zipFilePath)
-                )
-            ).use { zipOutputStream ->
-                addFilesInDirectoryToZip(
-                    zipOutputStream = zipOutputStream,
+                addFilesInDirectoryToZip4j(
+                    zip4jFile = zip4jFile,
+                    zipParameters = zipParameters,
                     rootDirectory = rootDirectory,
                     directoryPath = sourceDirPath,
                     recurseSubDirs = recurseSubDirs,
@@ -206,6 +215,28 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
                     totalFilesCount = totalFileCount,
                     totalHandledFilesCount = 0
                 )
+            }
+        } else {
+            // Use existing ZipOutputStream implementation for backward compatibility
+            val totalFileCount = if (reportProgress) getFilesCount(rootDirectory, recurseSubDirs) else 0
+
+            withContext(Dispatchers.IO) {
+                ZipOutputStream(
+                    BufferedOutputStream(
+                        FileOutputStream(zipFilePath)
+                    )
+                ).use { zipOutputStream ->
+                    addFilesInDirectoryToZip(
+                        zipOutputStream = zipOutputStream,
+                        rootDirectory = rootDirectory,
+                        directoryPath = sourceDirPath,
+                        recurseSubDirs = recurseSubDirs,
+                        reportProgress = reportProgress,
+                        jobId = jobId,
+                        totalFilesCount = totalFileCount,
+                        totalHandledFilesCount = 0
+                    )
+                }
             }
         }
     }
@@ -317,39 +348,157 @@ class FlutterArchivePlugin : FlutterPlugin, MethodCallHandler {
         return handledFilesCount
     }
 
+    /**
+     * Add all files in [rootDirectory] to [zip4jFile] using Zip4j with password protection.
+     *
+     * @return Updated total number of handled files
+     */
+    private suspend fun addFilesInDirectoryToZip4j(
+        zip4jFile: Zip4jFile,
+        zipParameters: ZipParameters,
+        rootDirectory: File,
+        directoryPath: String,
+        recurseSubDirs: Boolean,
+        reportProgress: Boolean,
+        jobId: Int,
+        totalFilesCount: Int,
+        totalHandledFilesCount: Int
+    ): Int {
+        val directory = File(directoryPath)
+
+        val files = directory.listFiles() ?: arrayOf<File>()
+        var handledFilesCount = totalHandledFilesCount
+        for (f in files) {
+            val path = directoryPath + File.separator + f.name
+            val relativePath = File(path).relativeTo(rootDirectory).path
+
+            if (f.isDirectory) {
+                // include subdirectories only if requested
+                if (!recurseSubDirs) {
+                    continue
+                }
+                Log.i("zip", "Adding directory: $relativePath")
+
+                if (reportProgress) {
+                    // report progress
+                    val progress: Double =
+                        handledFilesCount.toDouble() / totalFilesCount.toDouble() * 100.0
+
+                    Log.d(LOG_TAG, "Waiting reportProgress...")
+                    val entry = ZipEntry(relativePath + File.separator)
+                    entry.time = f.lastModified()
+                    val zipFileOperation = reportProgress(jobId, entry, progress)
+                    Log.d(LOG_TAG, "...reportProgress: $zipFileOperation")
+
+                    if (zipFileOperation == ZipFileOperation.SKIP_ITEM) {
+                        continue
+                    } else if (zipFileOperation == ZipFileOperation.CANCEL) {
+                        throw CancellationException("Operation cancelled")
+                    }
+                }
+
+                // zip files and subdirectories in this directory
+                handledFilesCount = addFilesInDirectoryToZip4j(
+                    zip4jFile = zip4jFile,
+                    zipParameters = zipParameters,
+                    rootDirectory = rootDirectory,
+                    directoryPath = path,
+                    recurseSubDirs = true,
+                    reportProgress = reportProgress,
+                    jobId = jobId,
+                    totalFilesCount = totalFilesCount,
+                    totalHandledFilesCount = handledFilesCount
+                )
+            } else {
+                Log.i("zip", "Adding file: $relativePath")
+                ++handledFilesCount
+                withContext(Dispatchers.IO) {
+                    if (reportProgress) {
+                        // report progress
+                        val progress: Double =
+                            handledFilesCount.toDouble() / totalFilesCount.toDouble() * 100.0
+
+                        Log.d(LOG_TAG, "Waiting reportProgress...")
+                        val entry = ZipEntry(relativePath)
+                        entry.time = f.lastModified()
+                        entry.size = f.length()
+                        val zipFileOperation = reportProgress(jobId, entry, progress)
+                        Log.d(LOG_TAG, "...reportProgress: $zipFileOperation")
+
+                        when (zipFileOperation) {
+                            ZipFileOperation.INCLUDE_ITEM -> {
+                                zipParameters.fileNameInZip = relativePath
+                                zip4jFile.addFile(f, zipParameters)
+                            }
+                            ZipFileOperation.CANCEL -> {
+                                throw CancellationException("Operation cancelled")
+                            }
+                            else -> {
+                                // skip this entry
+                            }
+                        }
+                    } else {
+                        zipParameters.fileNameInZip = relativePath
+                        zip4jFile.addFile(f, zipParameters)
+                    }
+                }
+            }
+        }
+        return handledFilesCount
+    }
+
     @Throws(IOException::class)
     private fun zipFiles(
         sourceDirPath: String,
         relativeFilePaths: List<String>,
         zipFilePath: String,
-        includeBaseDirectory: Boolean
+        includeBaseDirectory: Boolean,
+        password: String?
     ) {
         Log.i(
             "zip",
             "sourceDirPath: $sourceDirPath, " +
                     "zipFilePath: $zipFilePath, " +
-                    "includeBaseDirectory: $includeBaseDirectory"
+                    "includeBaseDirectory: $includeBaseDirectory, " +
+                    "password: ${if (password != null) "***" else "null"}"
         )
         Log.i("zip", "Files: ${relativeFilePaths.joinToString(",")}")
 
         val rootDirectory =
             if (includeBaseDirectory) File(sourceDirPath).parentFile else File(sourceDirPath)
 
-        ZipOutputStream(
-            BufferedOutputStream(
-                FileOutputStream(zipFilePath)
-            )
-        ).use { zipOutputStream ->
+        if (password != null) {
+            // Use Zip4j for password-protected zip
+            val zip4jFile = Zip4jFile(zipFilePath, password.toCharArray())
+            val zipParameters = ZipParameters()
+            zipParameters.isEncryptFiles = true
+            zipParameters.encryptionMethod = EncryptionMethod.ZIP_STANDARD
+
             for (relativeFilePath in relativeFilePaths) {
                 val file = rootDirectory.resolve(relativeFilePath)
                 val cleanedRelativeFilePath = file.relativeTo(rootDirectory).path
                 Log.i("zip", "Adding file: $cleanedRelativeFilePath")
-                FileInputStream(file).use { fileInputStream ->
-                    val entry = ZipEntry(cleanedRelativeFilePath)
-                    entry.time = file.lastModified()
-                    entry.size = file.length()
-                    zipOutputStream.putNextEntry(entry)
-                    fileInputStream.copyTo(zipOutputStream)
+                zipParameters.fileNameInZip = cleanedRelativeFilePath
+                zip4jFile.addFile(file, zipParameters)
+            }
+        } else {
+            // Use existing ZipOutputStream implementation for backward compatibility
+            ZipOutputStream(
+                BufferedOutputStream(
+                    FileOutputStream(zipFilePath)
+                )
+            ).use { zipOutputStream ->
+                for (relativeFilePath in relativeFilePaths) {
+                    val file = rootDirectory.resolve(relativeFilePath)
+                    val cleanedRelativeFilePath = file.relativeTo(rootDirectory).path
+                    Log.i("zip", "Adding file: $cleanedRelativeFilePath")
+                    FileInputStream(file).use { fileInputStream ->
+                        val entry = ZipEntry(cleanedRelativeFilePath)
+                        entry.time = file.lastModified()
+                        entry.size = file.length()
+                        zipOutputStream.putNextEntry(entry)
+                        fileInputStream.copyTo(zipOutputStream)
+                    }
                 }
             }
         }

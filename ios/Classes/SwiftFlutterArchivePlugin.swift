@@ -11,6 +11,7 @@ import Flutter
 
 /// https://github.com/weichsel/ZIPFoundation
 import ZIPFoundation
+import SSZipArchive
 
 enum ZipFileOperation: String {
     case includeItem
@@ -63,6 +64,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
             let recurseSubDirs = args["recurseSubDirs"] as? Bool == true
             let reportProgress = args["reportProgress"] as? Bool == true
             let jobId = args["jobId"] as? Int
+            let password = args["password"] as? String
 
             log("sourceDir: " + sourceDir)
             log("zipFile: " + zipFile)
@@ -70,19 +72,21 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
             log("recurseSubDirs: " + recurseSubDirs.description)
             log("reportProgress: " + reportProgress.description)
             log("jobId: " + (jobId?.description ?? ""))
+            log("password: " + (password != nil ? "***" : "null"))
 
             DispatchQueue.global(qos: .userInitiated).async {
                 let fileManager = FileManager()
                 let sourceURL = URL(fileURLWithPath: sourceDir)
                 let destinationURL = URL(fileURLWithPath: zipFile)
                 do {
-                    if reportProgress || !recurseSubDirs {
+                    if reportProgress || !recurseSubDirs || password != nil {
                         try self.zipDirectory(at: sourceURL,
                                               to: destinationURL,
                                               recurseSubDirs: recurseSubDirs,
                                               includeBaseDirectory: includeBaseDirectory,
                                               reportProgress: reportProgress,
-                                              jobId: jobId)
+                                              jobId: jobId,
+                                              password: password)
                     } else {
                         try fileManager.zipItem(at: sourceURL,
                                                 to: destinationURL,
@@ -129,10 +133,12 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                 return
             }
             let includeBaseDirectory = args["includeBaseDirectory"] as? Bool == true
+            let password = args["password"] as? String
 
             log("files: " + files.joined(separator: ","))
             log("zipFile: " + zipFile)
             log("includeBaseDirectory: " + includeBaseDirectory.description)
+            log("password: " + (password != nil ? "***" : "null"))
 
             DispatchQueue.global(qos: .userInitiated).async {
                 var sourceURL = URL(fileURLWithPath: sourceDir)
@@ -141,12 +147,29 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                 }
                 let destinationURL = URL(fileURLWithPath: zipFile)
                 do {
-                    // create zip archive
-                    let archive = try Archive(url: destinationURL, accessMode: .create)
+                    // Use SSZipArchive for password-protected zips
+                    if let password = password {
+                        // Build full file paths
+                        let filePaths = files.map { (relativePath: String) -> String in
+                            let fileURL = sourceURL.appendingPathComponent(relativePath)
+                            return fileURL.path
+                        }
+                        
+                        // Call SSZipArchive directly
+                        let success = SSZipArchive.createZipFile(atPath: destinationURL.path,
+                                                                withFilesAtPaths: filePaths,
+                                                                withPassword: password)
+                        if !success {
+                            throw NSError(domain: "ZIP_ERROR", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create password-protected zip file"])
+                        }
+                    } else {
+                        // Use ZIPFoundation for non-password-protected zips
+                        let archive = try Archive(url: destinationURL, accessMode: .create)
 
-                    for item in files {
-                        self.log("Adding: " + item)
-                        try archive.addEntry(with: item, relativeTo: sourceURL, compressionMethod: .deflate)
+                        for item in files {
+                            self.log("Adding: " + item)
+                            try archive.addEntry(with: item, relativeTo: sourceURL, compressionMethod: .deflate)
+                        }
                     }
 
                     DispatchQueue.main.async {
@@ -240,8 +263,29 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
                               recurseSubDirs: Bool,
                               includeBaseDirectory: Bool,
                               reportProgress: Bool,
-                              jobId: Int?) throws
+                              jobId: Int?,
+                              password: String?) throws
     {
+        // Use SSZipArchive for password-protected zips
+        if let password = password {
+            let sourcePath = sourceURL.path
+            let zipPath = zipFileURL.path
+            
+            // Call SSZipArchive directly
+            let success = SSZipArchive.createZipFile(atPath: zipPath,
+                                                    withContentsOfDirectory: sourcePath,
+                                                    keepParentDirectory: includeBaseDirectory,
+                                                    compressionLevel: -1,
+                                                    password: password,
+                                                    aes: true)
+            
+            if !success {
+                throw NSError(domain: "ZIP_ERROR", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create password-protected zip file"])
+            }
+            return
+        }
+        
+        // Use ZIPFoundation for non-password-protected zips
         var files = [URL]()
         if let enumerator = FileManager.default.enumerator(
             at: sourceURL,
