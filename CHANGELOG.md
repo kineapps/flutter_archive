@@ -1,3 +1,10 @@
+# 6.1.0
+
+- [iOS] SPM support.
+- [iOS] Single darwin package for both iOS and MacOS.
+- [iOS] Migrated ios/macos example to use SPM.
+- [Flutter] sdk bump to 3.0.0
+
 ## 6.0.4
 - [Android] Updated compileSdkVersion to 36, Gradle to 8.14 and Java/Kotlin compatibility to version 17
 
