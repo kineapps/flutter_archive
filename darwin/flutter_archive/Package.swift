@@ -6,7 +6,8 @@ import PackageDescription
 let package = Package(
     name: "flutter_archive",
     platforms: [
-        .iOS("12.0")
+        .iOS("12.0"),
+        .macOS("10.11")
     ],
     products: [
         .library(name: "flutter-archive", targets: ["flutter_archive"])

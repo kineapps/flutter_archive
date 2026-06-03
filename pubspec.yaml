@@ -5,8 +5,8 @@ homepage: https://github.com/kineapps/flutter_archive
 repository: https://github.com/kineapps/flutter_archive
 
 environment:
-  sdk: '>=2.15.0 <4.0.0'
-  flutter: ">=2.8.0"
+  sdk: ^3.0.0
+  flutter: ">=3.7.0"
 
 dependencies:
   flutter:
@@ -32,8 +32,10 @@ flutter:
         pluginClass: FlutterArchivePlugin
       ios:
         pluginClass: FlutterArchivePlugin
+        sharedDarwinSource: true
       macos:
         pluginClass: FlutterArchivePlugin
+        sharedDarwinSource: true
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
   #  - images/a_dot_burr.jpeg
