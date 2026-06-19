@@ -9,6 +9,8 @@ import FlutterMacOS
 import Flutter
 #endif
 
+import Foundation
+
 /// https://github.com/weichsel/ZIPFoundation
 import ZIPFoundation
 

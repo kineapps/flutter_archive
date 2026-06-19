@@ -4,14 +4,14 @@
 #
 Pod::Spec.new do |s|
   s.name             = 'flutter_archive'
-  s.version          = '0.0.1'
-  s.summary          = 'A new flutter plugin project.'
+  s.version          = '6.2.0'
+  s.summary          = 'Create and extract ZIP archive files in iOS and macOS.'
   s.description      = <<-DESC
-A new flutter plugin project.
+Create and extract ZIP archive files in iOS and macOS. Zip all files in a directory recursively or a given list of files.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/kineapps/flutter_archive'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'KineApps' => 'https://github.com/kineapps' }
   s.source           = { :path => '.' }
   s.source_files     = 'flutter_archive/Sources/flutter_archive/**/*.swift'
 
@@ -27,5 +27,5 @@ A new flutter plugin project.
     'DEFINES_MODULE' => 'YES',
     'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386'
   }
-  s.swift_version = '5.0'
+  s.swift_version = '5.9'
 end
