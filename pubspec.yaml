@@ -1,12 +1,12 @@
 name: flutter_archive
 description: Create and extract ZIP archive files in Android, iOS and macOS. Zip all files in a directory recursively or a given list of files.
-version: 6.0.4
+version: 6.1.0
 homepage: https://github.com/kineapps/flutter_archive
 repository: https://github.com/kineapps/flutter_archive
 
 environment:
-  sdk: '>=2.15.0 <4.0.0'
-  flutter: ">=2.8.0"
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
 
 dependencies:
   flutter:
