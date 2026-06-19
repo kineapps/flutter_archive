@@ -1,3 +1,9 @@
+## 6.2.0
+
+- [iOS][macOS] Added Swift Package Manager (SPM) support alongside existing CocoaPods support. Thanks to [@olekeke999](https://github.com/olekeke999)!
+- [iOS][macOS] Unified the iOS and macOS implementations into a single shared `darwin` package.
+- [Example] Migrated the iOS and macOS example apps to Swift Package Manager.
+
 ## 6.1.0
 - Updates minimum supported SDK version to Flutter 3.44 / Dart 3.12
 - [Android] Migrates to built-in Kotlin (applies the Kotlin Gradle Plugin only on AGP < 9)

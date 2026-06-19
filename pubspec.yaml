@@ -1,6 +1,6 @@
 name: flutter_archive
 description: Create and extract ZIP archive files in Android, iOS and macOS. Zip all files in a directory recursively or a given list of files.
-version: 6.1.0
+version: 6.2.0
 homepage: https://github.com/kineapps/flutter_archive
 repository: https://github.com/kineapps/flutter_archive
 
@@ -32,8 +32,10 @@ flutter:
         pluginClass: FlutterArchivePlugin
       ios:
         pluginClass: FlutterArchivePlugin
+        sharedDarwinSource: true
       macos:
         pluginClass: FlutterArchivePlugin
+        sharedDarwinSource: true
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
   #  - images/a_dot_burr.jpeg

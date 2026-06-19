@@ -3,7 +3,7 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree.
 
-#if os(OSX)
+#if os(macOS)
 import FlutterMacOS
 #elseif os(iOS)
 import Flutter
@@ -26,7 +26,7 @@ public class SwiftFlutterArchivePlugin: NSObject, FlutterPlugin {
     let channel: FlutterMethodChannel
 
     public static func register(with registrar: FlutterPluginRegistrar) {
-        #if os(OSX)
+        #if os(macOS)
         let channel = FlutterMethodChannel(name: "flutter_archive", binaryMessenger: registrar.messenger)
         #elseif os(iOS)
         let channel = FlutterMethodChannel(name: "flutter_archive", binaryMessenger: registrar.messenger())
