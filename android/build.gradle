@@ -47,10 +47,9 @@ android {
         main.java.srcDirs += 'src/main/kotlin'
     }
     defaultConfig {
-        minSdkVersion 19
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        minSdkVersion 24
     }
-    lintOptions {
+    lint {
         disable 'InvalidPackage'
     }
 }
