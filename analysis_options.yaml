@@ -1,0 +1,11 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    # The public ZipFileCharset constants intentionally mirror IANA charset
+    # names (UTF_8, ISO_8859_1, CP437, ...). Renaming them would be a breaking
+    # API change, so this style rule is disabled.
+    constant_identifier_names: false
+
+# Additional information about this file can be found at
+# https://dart.dev/guides/language/analysis-options
