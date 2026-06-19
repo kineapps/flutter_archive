@@ -1,3 +1,7 @@
+## 6.1.0
+- Updates minimum supported SDK version to Flutter 3.44 / Dart 3.12
+- [Android] Migrates to built-in Kotlin (applies the Kotlin Gradle Plugin only on AGP < 9)
+
 ## 6.0.4
 - [Android] Updated compileSdkVersion to 36, Gradle to 8.14 and Java/Kotlin compatibility to version 17
 
