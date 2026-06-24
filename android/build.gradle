@@ -24,9 +24,15 @@ rootProject.allprojects {
 
 apply plugin: 'com.android.library'
 
-// AGP 9+ has built-in Kotlin support; older versions need the plugin explicitly.
+// AGP 9+ has built-in Kotlin support, but only when the consumer enables it
+// (android.builtInKotlin=true). Apply the Kotlin Gradle Plugin on older AGP, or
+// whenever built-in Kotlin is off, so the kotlin {} DSL always has a provider.
 def agpMajor = com.android.Version.ANDROID_GRADLE_PLUGIN_VERSION.tokenize('.')[0] as int
-if (agpMajor < 9) {
+def builtInKotlin = providers.gradleProperty("android.builtInKotlin")
+        .map { it.toBoolean() }
+        .orElse(agpMajor >= 9)
+        .get()
+if (agpMajor < 9 || !builtInKotlin) {
     apply plugin: 'kotlin-android'
 }
 
@@ -54,9 +60,13 @@ android {
     }
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+// The kotlin {} DSL is only registered when the Kotlin Gradle Plugin is applied;
+// under built-in Kotlin (no KGP) it is absent, so guard the configuration.
+plugins.withId("org.jetbrains.kotlin.android") {
+    kotlin {
+        compilerOptions {
+            jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+        }
     }
 }
 
