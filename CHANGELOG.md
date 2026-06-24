@@ -1,3 +1,7 @@
+## 6.3.1
+
+- [Android] Fix "Could not find method kotlin()" build failure on AGP 9 when built-in Kotlin is disabled (the Flutter template default) — only configure the kotlin {} DSL when the Kotlin Gradle Plugin is applied, and apply KGP when built-in Kotlin is off (#86)
+
 ## 6.3.0
 
 - [iOS] Raised declared deployment target to 13.0 to match the minimum already required by Flutter 3.44+
