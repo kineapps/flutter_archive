@@ -14,7 +14,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "FlutterFramework", path: "../FlutterFramework"),
-        .package(url: "https://github.com/weichsel/ZIPFoundation.git", exact: "0.9.19")
+        .package(url: "https://github.com/weichsel/ZIPFoundation.git", .upToNextMinor(from: "0.9.19"))
     ],
     targets: [
         .target(
