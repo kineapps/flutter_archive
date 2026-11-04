@@ -1,3 +1,7 @@
+## 6.3.2
+
+- [iOS][macOS] Relaxed the ZIPFoundation dependency from an exact 0.9.19 pin to a flexible constraint (SwiftPM `.upToNextMinor(from: "0.9.19")`, CocoaPods `~> 0.9.19`) (#91)
+
 ## 6.3.1
 
 - [Android] Fix "Could not find method kotlin()" build failure on AGP 9 when built-in Kotlin is disabled (the Flutter template default) — only configure the kotlin {} DSL when the Kotlin Gradle Plugin is applied, and apply KGP when built-in Kotlin is off (#86)
